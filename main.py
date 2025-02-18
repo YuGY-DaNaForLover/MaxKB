@@ -24,7 +24,8 @@ def collect_static():
     """
     logging.info("Collect static files")
     try:
-        management.call_command('collectstatic', '--no-input', '-c', verbosity=0, interactive=False)
+        management.call_command(
+            'collectstatic', '--no-input', '-c', verbosity=0, interactive=False)
         logging.info("Collect static files done")
     except:
         pass
@@ -44,7 +45,8 @@ def perform_db_migrate():
 
 
 def start_services():
-    services = args.services if isinstance(args.services, list) else [args.services]
+    services = args.services if isinstance(
+        args.services, list) else [args.services]
     start_args = []
     if args.daemon:
         start_args.append('--daemon')
@@ -68,7 +70,8 @@ def start_services():
 
 
 def dev():
-    services = args.services if isinstance(args.services, list) else args.services
+    services = args.services if isinstance(
+        args.services, list) else args.services
     if services.__contains__('web'):
         management.call_command('runserver', "0.0.0.0:8080")
     elif services.__contains__('celery'):
@@ -77,6 +80,7 @@ def dev():
         os.environ.setdefault('SERVER_NAME', 'local_model')
         from smartdoc.const import CONFIG
         bind = f'{CONFIG.get("LOCAL_MODEL_HOST")}:{CONFIG.get("LOCAL_MODEL_PORT")}'
+        logging.info("local_model bind: {}".format(bind))
         management.call_command('runserver', bind)
 
 
@@ -99,7 +103,8 @@ if __name__ == '__main__':
     args, e = parser.parse_known_args()
     parser.add_argument(
         "services", type=str, default='all' if args.action == 'start' else 'web', nargs="*",
-        choices=("all", "web", "task") if args.action == 'start' else ("web", "celery", 'local_model'),
+        choices=("all", "web", "task") if args.action == 'start' else (
+            "web", "celery", 'local_model'),
         help="The service to start",
     )
 
@@ -120,4 +125,3 @@ if __name__ == '__main__':
         collect_static()
         perform_db_migrate()
         start_services()
-

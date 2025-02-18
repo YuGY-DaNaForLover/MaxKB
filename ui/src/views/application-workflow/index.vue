@@ -56,7 +56,7 @@
                 <AppIcon iconName="app-save-outlined"></AppIcon>
                 {{ $t('views.applicationWorkflow.setting.autoSave') }}
                 <div class="ml-4">
-                  <el-switch size="small" v-model="isSave" @change="changeSave" />
+                  <el-switch size="small" v-model="isSave" @change="changeSave($event as boolean)" />
                 </div>
               </el-dropdown-item>
             </el-dropdown-menu>

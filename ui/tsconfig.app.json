@@ -10,6 +10,7 @@
     "module": "esnext", // 使用ES模块语法
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["element-plus/global"]
   }
 }

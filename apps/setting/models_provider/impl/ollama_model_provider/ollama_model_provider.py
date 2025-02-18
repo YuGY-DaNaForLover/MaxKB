@@ -250,19 +250,22 @@ class OllamaModelProvider(IModelProvider):
                          'ollama_icon_svg')))
 
     @staticmethod
-    def get_base_model_list(api_base):
+    def get_base_model_list(api_base, api_key):
         base_url = get_base_url(api_base)
-        r = requests.request(method="GET", url=f"{base_url}/api/tags", timeout=5)
+        r = requests.request(method="GET", url=f"{base_url}/api/tags", headers={"Authorization": f"Bearer {api_key}"}, timeout=5)
         r.raise_for_status()
         return r.json()
 
     def down_model(self, model_type: str, model_name, model_credential: Dict[str, object]) -> Iterator[DownModelChunk]:
         api_base = model_credential.get('api_base', '')
+        api_key = model_credential.get('api_key', '')
         base_url = get_base_url(api_base)
+        print(f"url: {base_url}/api/pull, apikey: {api_key}")
         r = requests.request(
             method="POST",
             url=f"{base_url}/api/pull",
             data=json.dumps({"name": model_name}).encode(),
+            headers={"Authorization": f"Bearer {api_key}"},
             stream=True,
         )
         return convert(r)

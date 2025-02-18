@@ -19,6 +19,7 @@ class OllamaEmbedding(MaxKBBaseModel, OllamaEmbeddings):
         return OllamaEmbedding(
             model=model_name,
             base_url=model_credential.get('api_base'),
+            headers={"Authorization": f"Bearer {model_credential.get('api_key')}"}
         )
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:

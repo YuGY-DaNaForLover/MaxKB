@@ -42,7 +42,8 @@ urlpatterns = [
 def pro():
     # 暴露静态主要是swagger资源
     urlpatterns.append(
-        re_path(r'^static/(?P<path>.*)$', static.serve, {'document_root': settings.STATIC_ROOT}, name='static'),
+        re_path(r'^static/(?P<path>.*)$', static.serve,
+                {'document_root': settings.STATIC_ROOT}, name='static'),
     )
     # 暴露ui静态资源
     urlpatterns.append(
@@ -61,7 +62,8 @@ def page_not_found(request, exception):
     """
     if request.path.startswith("/api/"):
         return Result(response_status=status.HTTP_404_NOT_FOUND, code=404, message="找不到接口")
-    index_path = os.path.join(PROJECT_DIR, 'apps', "static", 'ui', 'index.html')
+    index_path = os.path.join(
+        PROJECT_DIR, 'apps', "static", 'ui', 'index.html')
     if not os.path.exists(index_path):
         return HttpResponse("页面不存在", status=404)
     content = get_index_html(index_path)

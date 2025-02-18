@@ -25,7 +25,7 @@ class OllamaEmbeddingModelCredential(BaseForm, BaseModelCredential):
             raise AppApiException(ValidCode.valid_error.value,
                                   _('{model_type} Model type is not supported').format(model_type=model_type))
         try:
-            model_list = provider.get_base_model_list(model_credential.get('api_base'))
+            model_list = provider.get_base_model_list(model_credential.get('api_base'), model_credential.get('api_key'))
         except Exception as e:
             raise AppApiException(ValidCode.valid_error.value, _('API domain name is invalid'))
         exist = [model for model in (model_list.get('models') if model_list.get('models') is not None else []) if
@@ -47,3 +47,4 @@ class OllamaEmbeddingModelCredential(BaseForm, BaseModelCredential):
         return self
 
     api_base = forms.TextInputField('API URL', required=True)
+    api_key = forms.PasswordInputField('API Key', required=True)

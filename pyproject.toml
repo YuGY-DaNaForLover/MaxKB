@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "maxkb"
+name = "apps"
 version = "0.1.0"
 description = "智能知识库问答系统"
 authors = ["shaohuzhang1 <shaohu.zhang@fit2cloud.com>"]
