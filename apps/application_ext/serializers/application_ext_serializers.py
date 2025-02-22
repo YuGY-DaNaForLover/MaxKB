@@ -70,7 +70,7 @@ class ApplicationExtSerializer(ApplicationSerializer):
         def insert_qa_text(self, application: Dict, application_id: str):
             if 'qa_texts' in application and len(application.get('qa_texts', [])):
                 records = [ApplicationQaText(
-                    id=uuid.uuid1(), **qa_text) for qa_text in application.get('qa_texts', [])]
+                    id=uuid.uuid1(), subject_identifier=qa_text.get('subject_identifier'), q_a_text=qa_text.get('q_a_text')) for qa_text in application.get('qa_texts', [])]
                 QuerySet(ApplicationQaText).bulk_create(records)
                 mapping_records = [ApplicationQaTextMapping(
                     id=uuid.uuid1(), application_id=application_id, application_qa_text_id=record.id) for record in records]

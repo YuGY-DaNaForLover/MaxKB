@@ -20,7 +20,12 @@
                   >系统名称, 用于将智能体模版保存到不同业务系统，比如“信访”</el-text
                 >
               </div>
-              <el-button type="primary" @click="saveAsTemplate" :loading="loading">保存</el-button>
+              <el-button
+                type="primary"
+                @click="saveAsTemplate(applicationFormRef)"
+                :loading="loading"
+                >保存</el-button
+              >
             </div>
           </el-popover>
         </div>
@@ -675,20 +680,25 @@ const openAIParamSettingDialog = () => {
   }
 }
 const systemName = ref('')
-const saveAsTemplate = () => {
-  loading.value = true
-  applicationApi
-    .saveAsTemplate({
-      ...applicationForm.value,
-      system_name: systemName.value
-    })
-    .then(() => {
-      MsgSuccess('保存成功！')
-      systemName.value = ''
-    })
-    .finally(() => {
-      loading.value = false
-    })
+const saveAsTemplate = async (formEl: FormInstance | undefined) => {
+  if (!formEl) return
+  await formEl.validate((valid) => {
+    if (valid) {
+      loading.value = true
+      applicationApi
+        .saveAsTemplate({
+          ...applicationForm.value,
+          system_name: systemName.value
+        })
+        .then(() => {
+          MsgSuccess('保存成功！')
+          systemName.value = ''
+        })
+        .finally(() => {
+          loading.value = false
+        })
+    }
+  })
 }
 
 const openReasoningParamSettingDialog = () => {

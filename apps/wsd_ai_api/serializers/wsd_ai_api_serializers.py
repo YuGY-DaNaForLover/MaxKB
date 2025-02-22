@@ -49,7 +49,7 @@ class WsdAiApiSerializers(serializers.Serializer):
     class ApplicationCreateSerializer(serializers.Serializer):
         user_id = serializers.UUIDField(
             required=True, error_messages=ErrMessage.uuid(_("User ID")))
-        dataset_id = serializers.UUIDField(
+        dataset_id_list = serializers.ListField(
             required=True, error_messages=ErrMessage.uuid(_("Dataset ID")))
         dsr_name = serializers.CharField(
             required=True, error_messages=ErrMessage.char(_("Dsr Name")))
@@ -63,7 +63,7 @@ class WsdAiApiSerializers(serializers.Serializer):
             if with_valid:
                 self.is_valid(raise_exception=True)
             user_id = self.data.get('user_id')
-            dataset_id = self.data.get('dataset_id')
+            dataset_id_list = self.data.get('dataset_id_list')
             dsr_name = self.data.get('dsr_name')
             app_subject_identifier = self.data.get('app_subject_identifier')
             system_name = self.data.get('system_name')
@@ -79,12 +79,17 @@ class WsdAiApiSerializers(serializers.Serializer):
                      if os.path.isfile(os.path.join(folder_path, entry))]
             for file in files:
                 try:
+                    if not file.lower().endswith(('.mk')):
+                        continue
                     mk_instance = pickle.loads(get_mk_file_content(file))
                 except Exception as e:
                     raise AppApiException(1001, _("Unsupported file format"))
                 application = mk_instance.application
                 function_lib_list = mk_instance.function_lib_list
                 application_ext = application.get('ext', {})
+                if QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').exists():
+                    QuerySet(Application).filter(
+                        name=f'{dsr_name}-{application_ext.get("title")}').delete()
                 application_qa_text_mapping_list = application.get(
                     'qa_text_mapping_list', [])
                 if len(function_lib_list) > 0:
@@ -106,10 +111,12 @@ class WsdAiApiSerializers(serializers.Serializer):
                 QuerySet(FunctionLib).bulk_create(function_lib_model_list) if len(
                     function_lib_model_list) > 0 else None
                 # 关联知识库
-                application_dataset_mapping = self.to_application_dataset_mapping(
-                    application_model.id, dataset_id)
+                application_dataset_mapping_list = []
+                for dataset_id in dataset_id_list:
+                    application_dataset_mapping_list.append(self.to_application_dataset_mapping(
+                        application_model.id, dataset_id))
                 QuerySet(ApplicationDatasetMapping).bulk_create(
-                    [application_dataset_mapping])
+                    application_dataset_mapping_list)
                 # 插入应用扩展信息
                 application_ext_model = self.to_application_ext(
                     {**application_ext, 'subject_identifier': app_subject_identifier}, application_model.id)

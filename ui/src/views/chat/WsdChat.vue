@@ -5,7 +5,7 @@
         <img width="30" height="30" src="/logo.gif" alt="logo" style="margin-right: 10px" />
         {{ active_application_title }}
       </div>
-      <el-tabs v-model="active_application_id">
+      <el-tabs v-model="active_application_id" style="width: 60%">
         <el-tab-pane
           v-for="application in application_data_list"
           :key="application.application_id"
