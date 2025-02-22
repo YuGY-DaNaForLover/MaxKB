@@ -22,7 +22,7 @@ router.beforeEach(
       return
     }
     const { user } = useStore()
-    const notAuthRouteNameList = ['register', 'login', 'forgot_password', 'reset_password', 'Chat']
+    const notAuthRouteNameList = ['register', 'login', 'forgot_password', 'reset_password', 'Chat', 'WsdChat']
 
     if (!notAuthRouteNameList.includes(to.name ? to.name.toString() : '')) {
       if (to.query && to.query.token) {

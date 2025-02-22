@@ -88,6 +88,18 @@ const useApplicationStore = defineStore({
       })
     },
 
+    async asyncGetAppExtProfile(qa_subject_identifier: string, loading?: Ref<boolean>) {
+      return new Promise((resolve, reject) => {
+        applicationApi
+          .getAppExtProfile(qa_subject_identifier, loading)
+          .then((res) => {
+            resolve(res)
+          })
+          .catch((error) => {
+            reject(error)
+          })
+      })
+    },
     async asyncAppAuthentication(
       token: string,
       loading?: Ref<boolean>,
@@ -126,6 +138,46 @@ const useApplicationStore = defineStore({
       return new Promise((resolve, reject) => {
         applicationApi
           .validatePassword(id, password, loading)
+          .then((data) => {
+            resolve(data)
+          })
+          .catch((error) => {
+            reject(error)
+          })
+      })
+    },
+    async asyncGetApplicationIdList(app_subject_identifier: string) {
+      return new Promise<any>((resolve, reject) => {
+        applicationApi
+          .getApplicationIdList(app_subject_identifier)
+          .then((data) => {
+            resolve(data)
+          })
+          .catch((error) => {
+            reject(error)
+          })
+      })
+    },
+    async asyncDeleteApplicationQaText(application_qa_text_id: string) {
+      return new Promise((resolve, reject) => {
+        applicationApi
+          .deleteApplicationQaText(application_qa_text_id)
+          .then((data) => {
+            resolve(data)
+          })
+          .catch((error) => {
+            reject(error)
+          })
+      })
+    },
+    async asyncCreateApplicationQaText(
+      application_id: string,
+      qa_subject_identifier: string,
+      qa_text: string
+    ) {
+      return new Promise((resolve, reject) => {
+        applicationApi
+          .createApplicationQaText(application_id, qa_subject_identifier, qa_text)
           .then((data) => {
             resolve(data)
           })

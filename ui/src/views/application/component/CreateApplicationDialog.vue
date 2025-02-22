@@ -141,7 +141,13 @@ const applicationForm = ref<ApplicationFormType>({
   stt_model_enable: false,
   tts_model_enable: false,
   tts_type: 'BROWSER',
-  type: 'SIMPLE'
+  type: 'SIMPLE',
+  ext: {
+    title: '',
+    subject_identifier: '',
+    q_a_component: ''
+  },
+  qa_texts: []
 })
 
 const rules = reactive<FormRules<ApplicationFormType>>({
@@ -193,7 +199,13 @@ watch(dialogVisible, (bool) => {
       stt_model_enable: false,
       tts_model_enable: false,
       tts_type: 'BROWSER',
-      type: 'SIMPLE'
+      type: 'SIMPLE',
+      ext: {
+        title: '',
+        subject_identifier: '',
+        q_a_component: ''
+      },
+      qa_texts: []
     }
     applicationFormRef.value?.clearValidate()
   }

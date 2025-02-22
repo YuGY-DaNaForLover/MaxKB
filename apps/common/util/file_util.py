@@ -7,8 +7,12 @@
     @desc:
 """
 
-
-def get_file_content(path):
-    with open(path, "r", encoding='utf-8') as file:
+def get_file_content(path, encoding='utf-8'):
+    with open(path, "r", encoding=encoding) as file:
         content = file.read()
     return content
+
+def get_mk_file_content(path):
+    with open(path, "rb") as file:
+        byte_content = file.read()
+    return byte_content

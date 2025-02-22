@@ -260,7 +260,6 @@ class OllamaModelProvider(IModelProvider):
         api_base = model_credential.get('api_base', '')
         api_key = model_credential.get('api_key', '')
         base_url = get_base_url(api_base)
-        print(f"url: {base_url}/api/pull, apikey: {api_key}")
         r = requests.request(
             method="POST",
             url=f"{base_url}/api/pull",

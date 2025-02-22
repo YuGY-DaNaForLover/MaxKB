@@ -45,7 +45,9 @@ INSTALLED_APPS = [
     'django_apscheduler',
     'common',
     'function_lib',
-    'django_celery_beat'
+    'django_celery_beat',
+    'wsd_ai_api',
+    'application_ext'
 
 ]
 

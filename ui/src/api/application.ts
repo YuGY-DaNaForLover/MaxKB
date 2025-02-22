@@ -6,6 +6,7 @@ import { type Ref } from 'vue'
 import type { FormField } from '@/components/dynamics-form/type'
 
 const prefix = '/application'
+const extPrefix = '/ext'
 
 /**
  * 获取全部应用
@@ -41,7 +42,7 @@ const postApplication: (
   data: ApplicationFormType,
   loading?: Ref<boolean>
 ) => Promise<Result<any>> = (data, loading) => {
-  return post(`${prefix}`, data, undefined, loading)
+  return post(`${extPrefix}${prefix}`, data, undefined, loading)
 }
 
 /**
@@ -53,7 +54,7 @@ const putApplication: (
   data: ApplicationFormType,
   loading?: Ref<boolean>
 ) => Promise<Result<any>> = (application_id, data, loading) => {
-  return put(`${prefix}/${application_id}`, data, undefined, loading)
+  return put(`${extPrefix}${prefix}/${application_id}`, data, undefined, loading)
 }
 
 /**
@@ -75,7 +76,7 @@ const getApplicationDetail: (
   application_id: string,
   loading?: Ref<boolean>
 ) => Promise<Result<any>> = (application_id, loading) => {
-  return get(`${prefix}/${application_id}`, undefined, loading)
+  return get(`${extPrefix}${prefix}/${application_id}`, undefined, loading)
 }
 
 /**
@@ -144,6 +145,12 @@ const postAppAuthentication: (
  */
 const getAppProfile: (loading?: Ref<boolean>) => Promise<any> = (loading) => {
   return get(`${prefix}/profile`, undefined, loading)
+}
+const getAppExtProfile: (qa_subject_identifier: string, loading?: Ref<boolean>) => Promise<any> = (
+  qa_subject_identifier,
+  loading
+) => {
+  return get(`${extPrefix}${prefix}/profile`, { qa_subject_identifier }, loading)
 }
 
 /**
@@ -517,7 +524,7 @@ const exportApplication = (
 ) => {
   return exportFile(
     application_name + '.mk',
-    `/application/${application_id}/export`,
+    `${extPrefix}/application/${application_id}/export`,
     undefined,
     loading
   )
@@ -530,8 +537,48 @@ const importApplication: (data: any, loading?: Ref<boolean>) => Promise<Result<a
   data,
   loading
 ) => {
-  return post(`${prefix}/import`, data, undefined, loading)
+  return post(`${extPrefix}${prefix}/import`, data, undefined, loading)
 }
+
+/**
+ * 保存为模板
+ */
+const saveAsTemplate: (data: any, loading?: Ref<boolean>) => Promise<Result<any>> = (
+  data,
+  loading
+) => {
+  return post(`${extPrefix}${prefix}/save_as_template`, data, undefined, loading)
+}
+
+/**
+ * 获取应用id列表
+ */
+const getApplicationIdList: (app_subject_identifier: string) => Promise<Result<any>> = (
+  app_subject_identifier
+) => {
+  return get(`${extPrefix}${prefix}/wsd-chat-info/${app_subject_identifier}`)
+}
+
+/**
+ * 删除应用问答文本
+ */
+const deleteApplicationQaText: (application_qa_text_id: string) => Promise<Result<any>> = (
+  application_qa_text_id
+) => {
+  return del(`${extPrefix}${prefix}/qa-text/${application_qa_text_id}`)
+}
+
+/**
+ * 创建应用问答文本
+ */
+const createApplicationQaText: (
+  application_id: string,
+  qa_subject_identifier: string,
+  qa_text: string
+) => Promise<Result<any>> = (application_id, qa_subject_identifier, qa_text) => {
+  return post(`${extPrefix}${prefix}/qa-text`, { application_id, qa_subject_identifier, qa_text })
+}
+
 export default {
   getAllAppilcation,
   getApplication,
@@ -547,6 +594,7 @@ export default {
   putAccessToken,
   postAppAuthentication,
   getAppProfile,
+  getAppExtProfile,
   putChatVote,
   getApplicationHitTest,
   getApplicationModel,
@@ -576,5 +624,9 @@ export default {
   uploadFile,
   exportApplication,
   importApplication,
-  getApplicationById
+  getApplicationById,
+  saveAsTemplate,
+  getApplicationIdList,
+  deleteApplicationQaText,
+  createApplicationQaText
 }

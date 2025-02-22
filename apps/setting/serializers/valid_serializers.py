@@ -21,12 +21,12 @@ from users.models import User
 from django.utils.translation import gettext_lazy as _
 
 model_message_dict = {
-    'dataset': {'model': DataSet, 'count': 5000,
+    'dataset': {'model': DataSet, 'count': 100000000,
                 'message': _(
-                    'The community version supports up to 5000 knowledge bases. If you need more knowledge bases, please contact us (https://fit2cloud.com/).')},
-    'application': {'model': Application, 'count': 5000,
+                    'The community version supports up to 100000000 knowledge bases. If you need more knowledge bases, please contact us (https://fit2cloud.com/).')},
+    'application': {'model': Application, 'count': 100000000,
                     'message': _(
-                        'The community version supports up to 5000 applications. If you need more applications, please contact us (https://fit2cloud.com/).')},
+                        'The community version supports up to 100000000 applications. If you need more applications, please contact us (https://fit2cloud.com/).')},
     'user': {'model': User, 'count': 100000000,
              'message': _(
                  'The community version supports up to 100000000 users. If you need more users, please contact us (https://fit2cloud.com/).')}

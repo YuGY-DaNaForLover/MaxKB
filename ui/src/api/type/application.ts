@@ -23,6 +23,15 @@ interface ApplicationFormType {
   tts_type?: string
   tts_autoplay?: boolean
   stt_autosend?: boolean
+  ext: {
+    title: string
+    subject_identifier: string
+    q_a_component: string
+  },
+  qa_texts?: {
+    subject_identifier: string
+    q_a_text: string
+  }[]
 }
 interface Chunk {
   real_node_id: string

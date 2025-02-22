@@ -6,6 +6,7 @@
     @date：2024/8/19 14:13
     @desc:
 """
+import json
 import logging
 import traceback
 from typing import List
@@ -21,6 +22,8 @@ from ops import celery_app
 from setting.models import Model
 from setting.models_provider import get_model
 from django.utils.translation import gettext_lazy as _
+from common.util.rsa_util import rsa_long_decrypt
+from setting.models_provider.impl.ollama_model_provider.model.embedding import OllamaEmbedding
 
 max_kb_error = logging.getLogger("max_kb_error")
 max_kb = logging.getLogger("max_kb")
@@ -35,6 +38,11 @@ def get_embedding_model(model_id, exception_handler=lambda e: max_kb_error.error
         model = QuerySet(Model).filter(id=model_id).first()
         embedding_model = ModelManage.get_model(model_id,
                                                 lambda _id: get_model(model))
+        if isinstance(embedding_model, OllamaEmbedding):
+            credential = json.loads(rsa_long_decrypt(model.credential))
+            if embedding_model.headers:
+                embedding_model.headers = {}
+                embedding_model.headers["Authorization"] = f"Bearer {credential.get('api_key')}"
     except Exception as e:
         exception_handler(e)
         raise e

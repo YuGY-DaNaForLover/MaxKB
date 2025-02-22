@@ -5,9 +5,25 @@
         <h3>
           {{ $t('common.setting') }}
         </h3>
-        <el-button type="primary" @click="submit(applicationFormRef)" :disabled="loading">
-          {{ $t('views.application.applicationForm.buttons.publish') }}
-        </el-button>
+        <div class="flex align-center">
+          <el-button type="primary" @click="submit(applicationFormRef)" :disabled="loading">
+            {{ $t('views.application.applicationForm.buttons.publish') }}
+          </el-button>
+          <el-popover placement="bottom" title="保存为智能体模版" :width="300" trigger="hover">
+            <template #reference>
+              <el-button type="warning" :loading="loading">保存为智能体模版</el-button>
+            </template>
+            <div>
+              <el-input v-model="systemName" placeholder="系统名称" class="mb-4" />
+              <div class="mb-16">
+                <el-text type="info"
+                  >系统名称, 用于将智能体模版保存到不同业务系统，比如“信访”</el-text
+                >
+              </div>
+              <el-button type="primary" @click="saveAsTemplate" :loading="loading">保存</el-button>
+            </div>
+          </el-popover>
+        </div>
       </div>
     </template>
     <el-row v-loading="loading">
@@ -410,6 +426,26 @@
                   </el-button>
                 </div>
               </el-form-item>
+              <el-form-item prop="ext.title" required>
+                <template #label>
+                  <div class="flex-between">
+                    <span>显示标题 <span class="danger">*</span></span>
+                  </div>
+                </template>
+                <el-input v-model="applicationForm.ext.title" />
+              </el-form-item>
+              <el-form-item label="主题标识">
+                <el-input
+                  v-model="applicationForm.ext.subject_identifier"
+                  placeholder="用于关联业务系统的主体，保存为智能体模版时不用填"
+                />
+              </el-form-item>
+              <el-form-item label="问答组件">
+                <el-input v-model="applicationForm.ext.q_a_component" />
+              </el-form-item>
+              <el-form-item label="常用问答">
+                <QaTextManager v-model="applicationForm.qa_texts" />
+              </el-form-item>
             </el-form>
           </el-scrollbar>
         </div>
@@ -494,13 +530,14 @@ import { isAppIcon } from '@/utils/application'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { ApplicationFormType } from '@/api/type/application'
 import { relatedObject } from '@/utils/utils'
-import { MsgSuccess, MsgWarning } from '@/utils/message'
+import { MsgSuccess } from '@/utils/message'
 import useStore from '@/stores'
 import { t } from '@/locales'
 import TTSModeParamSettingDialog from './component/TTSModeParamSettingDialog.vue'
 import ReasoningParamSettingDialog from './component/ReasoningParamSettingDialog.vue'
+import QaTextManager from './component/QaTextManager.vue'
 
-const { model, application } = useStore()
+const { application } = useStore()
 
 const route = useRoute()
 const {
@@ -551,7 +588,7 @@ const applicationForm = ref<ApplicationFormType>({
     prompt: defaultPrompt,
     system: t('views.application.applicationForm.form.roleSettings.placeholder'),
     no_references_prompt: '{question}',
-    reasoning_content_enable: false,
+    reasoning_content_enable: false
   },
   model_params_setting: {},
   problem_optimization: false,
@@ -561,7 +598,13 @@ const applicationForm = ref<ApplicationFormType>({
   stt_model_enable: false,
   tts_model_enable: false,
   tts_type: 'BROWSER',
-  type: 'SIMPLE'
+  type: 'SIMPLE',
+  ext: {
+    title: '',
+    subject_identifier: '',
+    q_a_component: ''
+  },
+  qa_texts: []
 })
 
 const rules = reactive<FormRules<ApplicationFormType>>({
@@ -570,6 +613,12 @@ const rules = reactive<FormRules<ApplicationFormType>>({
       required: true,
       message: t('views.application.applicationForm.form.appName.placeholder'),
       trigger: 'blur'
+    }
+  ],
+  'ext.title': [
+    {
+      required: true,
+      message: '请输入显示标题'
     }
   ]
 })
@@ -624,6 +673,22 @@ const openAIParamSettingDialog = () => {
       applicationForm.value.model_params_setting
     )
   }
+}
+const systemName = ref('')
+const saveAsTemplate = () => {
+  loading.value = true
+  applicationApi
+    .saveAsTemplate({
+      ...applicationForm.value,
+      system_name: systemName.value
+    })
+    .then(() => {
+      MsgSuccess('保存成功！')
+      systemName.value = ''
+    })
+    .finally(() => {
+      loading.value = false
+    })
 }
 
 const openReasoningParamSettingDialog = () => {
@@ -682,6 +747,17 @@ function getDetail() {
     applicationForm.value.tts_type = res.data.tts_type
     applicationForm.value.model_setting.no_references_prompt =
       res.data.model_setting.no_references_prompt || '{question}'
+    applicationForm.value.qa_texts = res.data.qa_texts
+    if (!res.data.ext) {
+      applicationForm.value.ext = {
+        subject_identifier: '',
+        q_a_component: '',
+        title: ''
+      }
+    }
+    applicationForm.value.ext.subject_identifier = res.data.ext?.subject_identifier || ''
+    applicationForm.value.ext.q_a_component = res.data.ext?.q_a_component || ''
+    applicationForm.value.ext.title = res.data.ext?.title || ''
   })
 }
 

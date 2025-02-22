@@ -25,6 +25,11 @@ export const routes: Array<RouteRecordRaw> = [
     name: 'Chat',
     component: () => import('@/views/chat/index.vue')
   },
+  {
+    path: '/wsd-chat/:app_subject_identifier/:qa_subject_identifier',
+    name: 'WsdChat',
+    component: () => import('@/views/chat/WsdChat.vue')
+  },
 
   {
     path: '/login',

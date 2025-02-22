@@ -462,7 +462,8 @@ watch(
 )
 
 defineExpose({
-  setScrollBottom
+  setScrollBottom,
+  sendMessage
 })
 </script>
 <style lang="scss" scoped>
