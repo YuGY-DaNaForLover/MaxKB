@@ -55,7 +55,14 @@
         />
       </g>
     </svg>
-    <img v-else src="@/assets/logo/MaxKB-logo.svg" :height="height" />
+    <!-- <img v-else src="@/assets/logo/MaxKB-logo.svg" :height="height" /> -->
+    <div class="logo-full-container">
+      <img src="@/assets/logo/logo.svg" :height="height" />
+      <div>
+        <div class="logo-full-slogan">万晟达-AI智能体</div>
+        <!-- <div class="logo-sub-slogan">万晟达</div> -->
+      </div>
+    </div>
   </template>
 </template>
 <script setup lang="ts">
@@ -90,6 +97,28 @@ const fileURL = computed(() => {
 .custom-logo-color {
   path {
     fill: var(--el-color-primary);
+  }
+}
+.logo-full-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 600;
+  img {
+    width: 30px;
+    height: 30px;
+  }
+  .logo-full-slogan {
+    background: linear-gradient(to right, var(--el-color-primary), #30cfd0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .logo-sub-slogan {
+    font-size: 14px;
+    font-weight: 400;
   }
 }
 </style>

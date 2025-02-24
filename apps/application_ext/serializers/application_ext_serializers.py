@@ -264,7 +264,7 @@ class ApplicationTemplateSerializer(serializers.Serializer):
         application_pickle = ApplicationExtSerializer.Operate.get_export_data(
             application=application_model)
         folder_path = os.path.join(
-            CONFIG.get_default_dataset_mk_instance(), system_name)
+            CONFIG.get_default_agent_mk_instance(), system_name)
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
         file_path = os.path.join(

@@ -1,5 +1,5 @@
 export default {
-  title: '函数库',
+  title: '脚本函数',
   createFunction: '创建函数',
   editFunction: '编辑函数',
   copyFunction: '复制函数',

@@ -16,7 +16,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY . /opt/maxkb/app
-RUN mkdir -p /opt/maxkb/app /opt/maxkb/model /opt/maxkb/conf && \
+RUN mkdir -p /opt/maxkb/app /opt/maxkb/model /opt/maxkb/conf /opt/maxkb/agent && \
     rm -rf /opt/maxkb/app/ui
 
 COPY --from=web-build ui /opt/maxkb/app/ui
@@ -44,6 +44,8 @@ ENV MAXKB_VERSION="${DOCKER_IMAGE_TAG} (build at ${BUILD_AT}, commit: ${GITHUB_C
     MAXKB_DB_MAX_OVERFLOW=80 \
     MAXKB_EMBEDDING_MODEL_NAME=/opt/maxkb/model/embedding/shibing624_text2vec-base-chinese \
     MAXKB_EMBEDDING_MODEL_PATH=/opt/maxkb/model/embedding \
+    DEFAULT_AGENT_MK_INSTANCE=/opt/maxkb/agent \
+    FRONTEND_URL=http://127.0.0.1:3000 \
     MAXKB_SANDBOX=1 \
     LANG=en_US.UTF-8 \
     PATH=/opt/py3/bin:$PATH \

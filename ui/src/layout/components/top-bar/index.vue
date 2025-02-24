@@ -107,6 +107,7 @@ function toUrl(url: string) {
   height: var(--app-header-height);
   box-sizing: border-box;
   padding: var(--app-header-padding);
+  background: linear-gradient(135deg,#f7f0ac,#acf7f0,#f0acf7) !important;
 
   .app-title-container {
     margin-right: 45px;

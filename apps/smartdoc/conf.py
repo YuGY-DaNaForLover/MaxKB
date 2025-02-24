@@ -120,8 +120,8 @@ class Config(dict):
     def get_language_code(self):
         return self.get('LANGUAGE_CODE', 'zh-CN')
     
-    def get_default_dataset_mk_instance(self):
-        return self.get('DEFAULT_DATASET_MK_INSTANCE', None)
+    def get_default_agent_mk_instance(self):
+        return self.get('DEFAULT_AGENT_MK_INSTANCE', None)
     
     def get_frontend_url(self):
         return self.get('FRONTEND_URL', None)

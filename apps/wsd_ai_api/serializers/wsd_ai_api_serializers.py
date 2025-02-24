@@ -69,7 +69,7 @@ class WsdAiApiSerializers(serializers.Serializer):
             system_name = self.data.get('system_name')
             # 读取默认信访智能体会话模版实例
             folder_path = os.path.join(
-                CONFIG.get_default_dataset_mk_instance(), system_name)
+                CONFIG.get_default_agent_mk_instance(), system_name)
             if not os.path.exists(folder_path):
                 raise AppApiException(500, f'{system_name}智能体会话模版不存在')
             entries = os.listdir(folder_path)
@@ -299,6 +299,7 @@ class WsdAiApiSerializers(serializers.Serializer):
                                       _('URL error, cannot parse [{source_url}]').format(source_url=source_url))
             return True
 
+        @transaction.atomic
         def save_web(self, instance: Dict, with_valid=True):
             if with_valid:
                 self.is_valid(raise_exception=True)
@@ -333,6 +334,7 @@ class WsdAiApiSerializers(serializers.Serializer):
         user_id = serializers.UUIDField(
             required=True, error_messages=ErrMessage.uuid(_("User ID")))
 
+        @transaction.atomic
         def sync(self, with_valid=True):
             if with_valid:
                 self.is_valid(raise_exception=True)

@@ -16,5 +16,7 @@ DB_PASSWORD: Password123@postgres
 DB_ENGINE: dj_db_conn_pool.backends.postgresql
 EMBEDDING_MODEL_PATH: /opt/maxkb/model/embedding
 EMBEDDING_MODEL_NAME: /opt/maxkb/model/embedding/shibing624_text2vec-base-chinese
+DEFAULT_AGENT_MK_INSTANCE: /opt/maxkb/agent
+FRONTEND_URL: http://127.0.0.1:3000
 
 DEBUG: false

@@ -63,7 +63,7 @@ MIDDLEWARE = [
 ]
 
 JWT_AUTH = {
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=60 * 60 * 2)  # <-- 设置token有效时间
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=60 * 60 * 24 * 7)  # <-- 设置token有效时间
 }
 
 APPS_DIR = os.path.join(PROJECT_DIR, 'apps')
