@@ -155,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, nextTick, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Delete } from '@element-plus/icons-vue'
 import useStore from '@/stores'
@@ -215,6 +215,12 @@ const handleResize = () => {
   upBreakPoint.value = window.innerWidth < breakPoint
 }
 
+watch(
+  () => props.application_profile,
+  (newVal) => {
+    qaTexts.value = newVal.qa_texts || []
+  }
+)
 function mouseenter(row: any) {
   mouseId.value = row.id
 }

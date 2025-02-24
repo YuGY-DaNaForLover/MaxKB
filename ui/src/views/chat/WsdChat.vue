@@ -126,9 +126,6 @@ onBeforeMount(async () => {
   application_data_list.value = res.data as ApplicationData[]
   if (application_data_list.value.length > 0) {
     active_application_id.value = application_data_list.value[0].application_id
-    if (application_access_token.value) {
-      loading.value = true
-    }
   }
 })
 </script>
