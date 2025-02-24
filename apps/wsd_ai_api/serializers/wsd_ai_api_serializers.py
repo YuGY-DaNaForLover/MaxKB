@@ -19,7 +19,7 @@ from common.util.file_util import get_mk_file_content
 from function_lib.models.function import FunctionLib, PermissionType
 from application.models import Application, ApplicationDatasetMapping
 from dataset.serializers.dataset_serializers import DataSetSerializers
-from application_ext.models.application_ext import ApplicationExt, ApplicationQaTextMapping
+from application_ext.models.application_ext import ApplicationExt, ApplicationQaTextMapping, ApplicationQaText
 from application_ext.serializers.application_ext_serializers import ApplicationExtSerializer
 
 from smartdoc.const import CONFIG
@@ -87,50 +87,56 @@ class WsdAiApiSerializers(serializers.Serializer):
                 application = mk_instance.application
                 function_lib_list = mk_instance.function_lib_list
                 application_ext = application.get('ext', {})
-                if QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').exists():
-                    QuerySet(Application).filter(
-                        name=f'{dsr_name}-{application_ext.get("title")}').delete()
                 application_qa_text_mapping_list = application.get(
                     'qa_text_mapping_list', [])
-                if len(function_lib_list) > 0:
-                    function_lib_id_list = [function_lib.get(
-                        'id') for function_lib in function_lib_list]
-                    exits_function_lib_id_list = [str(function_lib.id) for function_lib in
-                                                  QuerySet(FunctionLib).filter(id__in=function_lib_id_list)]
-                    # 获取到需要插入的函数
-                    function_lib_list = [function_lib for function_lib in function_lib_list if
-                                         not exits_function_lib_id_list.__contains__(function_lib.get('id'))]
-                application_model = self.to_application(
-                    application, user_id, f'{dsr_name}-{application_ext.get("title")}')
-                function_lib_model_list = [self.to_function_lib(
-                    f, user_id) for f in function_lib_list]
-                application_model.save()
-                # 插入认证信息
-                ApplicationAccessToken(application_id=application_model.id,
-                                       access_token=hashlib.md5(str(uuid.uuid1()).encode()).hexdigest()[8:24]).save()
-                QuerySet(FunctionLib).bulk_create(function_lib_model_list) if len(
-                    function_lib_model_list) > 0 else None
-                # 关联知识库
-                application_dataset_mapping_list = []
-                for dataset_id in dataset_id_list:
-                    application_dataset_mapping_list.append(self.to_application_dataset_mapping(
-                        application_model.id, dataset_id))
-                QuerySet(ApplicationDatasetMapping).bulk_create(
-                    application_dataset_mapping_list)
-                # 插入应用扩展信息
-                application_ext_model = self.to_application_ext(
-                    {**application_ext, 'subject_identifier': app_subject_identifier}, application_model.id)
-                application_ext_model.save()
-                # 插入应用问答文本映射信息
-                application_qa_text_mapping_model_list = self.to_application_qa_text(
-                    application_qa_text_mapping_list, application_model.id)
-                QuerySet(ApplicationQaTextMapping).bulk_create(application_qa_text_mapping_model_list) if len(
-                    application_qa_text_mapping_model_list) > 0 else None
+                if QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').exists():
+                    application_id = QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').first().id
+                    application_dict = self.to_application(
+                        application, user_id, f'{dsr_name}-{application_ext.get("title")}', True)
+                    application_dict['dataset_id_list'] = dataset_id_list
+                    application_dict['ext'] = self.to_application_ext(application_ext=application_ext, application_id=application_id, to_dict=True)
+                    application_dict['qa_texts'] = self.to_application_qa_text(application_qa_text_mapping_list=application_qa_text_mapping_list, application_id=application_id, to_dict=True)
+                    ApplicationExtSerializer.Operate(data={'application_id': application_id, 'user_id': user_id}).edit(application_dict)
+                else:
+                    if len(function_lib_list) > 0:
+                        function_lib_id_list = [function_lib.get(
+                            'id') for function_lib in function_lib_list]
+                        exits_function_lib_id_list = [str(function_lib.id) for function_lib in
+                                                      QuerySet(FunctionLib).filter(id__in=function_lib_id_list)]
+                        # 获取到需要插入的函数
+                        function_lib_list = [function_lib for function_lib in function_lib_list if
+                                             not exits_function_lib_id_list.__contains__(function_lib.get('id'))]
+                    application_model = self.to_application(
+                        application, user_id, f'{dsr_name}-{application_ext.get("title")}')
+                    function_lib_model_list = [self.to_function_lib(
+                        f, user_id) for f in function_lib_list]
+                    application_model.save()
+                    # 插入认证信息
+                    ApplicationAccessToken(application_id=application_model.id,
+                                           access_token=hashlib.md5(str(uuid.uuid1()).encode()).hexdigest()[8:24]).save()
+                    QuerySet(FunctionLib).bulk_create(function_lib_model_list) if len(
+                        function_lib_model_list) > 0 else None
+                    # 关联知识库
+                    application_dataset_mapping_list = []
+                    for dataset_id in dataset_id_list:
+                        application_dataset_mapping_list.append(self.to_application_dataset_mapping(
+                            application_model.id, dataset_id))
+                    QuerySet(ApplicationDatasetMapping).bulk_create(
+                        application_dataset_mapping_list)
+                    # 插入应用扩展信息
+                    application_ext_model = self.to_application_ext(
+                        {**application_ext, 'subject_identifier': app_subject_identifier}, application_model.id)
+                    application_ext_model.save()
+                    # 插入应用问答文本映射信息
+                    application_qa_text_mapping_model_list = self.to_application_qa_text(
+                        application_qa_text_mapping_list, application_model.id)
+                    QuerySet(ApplicationQaTextMapping).bulk_create(application_qa_text_mapping_model_list) if len(
+                        application_qa_text_mapping_model_list) > 0 else None
 
             return True
 
         @staticmethod
-        def to_application(application, user_id, dsr_name):
+        def to_application(application, user_id, dsr_name, to_dict=False):
             # 默认模型 todo
             model = QuerySet(Model).filter(
                 model_name="deepseek-r1:32b").first()
@@ -142,72 +148,131 @@ class WsdAiApiSerializers(serializers.Serializer):
                 if node.get('type') == 'search-dataset-node':
                     node.get('properties', {}).get(
                         'node_data', {})['dataset_id_list'] = []
-            return Application(id=uuid.uuid1(), user_id=user_id, name=dsr_name,
-                               desc=application.get('desc'),
-                               prologue=application.get('prologue'), dialogue_number=application.get('dialogue_number'),
-                               dataset_setting=application.get(
-                                   'dataset_setting'),
-                               model_id=llm_model_id,
-                               model_setting=application.get('model_setting'),
-                               model_params_setting=application.get(
-                                   'model_params_setting'),
-                               tts_model_params_setting=application.get(
-                                   'tts_model_params_setting'),
-                               problem_optimization=application.get(
-                                   'problem_optimization'),
-                               icon="/ui/favicon.ico",
-                               work_flow=work_flow,
-                               type=application.get('type'),
-                               problem_optimization_prompt=application.get(
-                                   'problem_optimization_prompt'),
-                               tts_model_enable=application.get(
-                                   'tts_model_enable'),
-                               stt_model_enable=application.get(
-                                   'stt_model_enable'),
-                               tts_type=application.get('tts_type'),
-                               clean_time=application.get('clean_time'),
-                               file_upload_enable=application.get(
-                                   'file_upload_enable'),
-                               file_upload_setting=application.get(
-                                   'file_upload_setting'),
-                               )
+            if to_dict:
+                return {
+                    'user_id': user_id,
+                    'name': dsr_name,
+                    'desc': application.get('desc'),
+                    'prologue': application.get('prologue'),
+                    'dialogue_number': application.get('dialogue_number'),
+                    'dataset_setting': application.get('dataset_setting'),
+                    'model_id': llm_model_id,
+                    'model_setting': application.get('model_setting'),
+                    'model_params_setting': application.get('model_params_setting'),
+                    'tts_model_params_setting': application.get('tts_model_params_setting'),
+                    'problem_optimization': application.get('problem_optimization'),
+                    'problem_optimization_prompt': application.get('problem_optimization_prompt'),
+                    'type': application.get('type'),
+                    'icon': "/ui/favicon.ico",
+                    'work_flow': work_flow,
+                    'file_upload_setting': application.get('file_upload_setting'),
+                    'file_upload_enable': application.get('file_upload_enable'),
+                    'clean_time': application.get('clean_time'),
+                    'tts_type': application.get('tts_type'),
+                    'tts_model_enable': application.get('tts_model_enable'),
+                    'stt_model_enable': application.get('stt_model_enable'),
+                }
+            else:
+                return Application(id=uuid.uuid1(), user_id=user_id, name=dsr_name,
+                                   desc=application.get('desc'),
+                                   prologue=application.get('prologue'), dialogue_number=application.get('dialogue_number'),
+                                   dataset_setting=application.get(
+                    'dataset_setting'),
+                    model_id=llm_model_id,
+                    model_setting=application.get(
+                                       'model_setting'),
+                    model_params_setting=application.get(
+                    'model_params_setting'),
+                    tts_model_params_setting=application.get(
+                    'tts_model_params_setting'),
+                    problem_optimization=application.get(
+                    'problem_optimization'),
+                    icon="/ui/favicon.ico",
+                    work_flow=work_flow,
+                    type=application.get('type'),
+                    problem_optimization_prompt=application.get(
+                    'problem_optimization_prompt'),
+                    tts_model_enable=application.get(
+                    'tts_model_enable'),
+                    stt_model_enable=application.get(
+                    'stt_model_enable'),
+                    tts_type=application.get('tts_type'),
+                    clean_time=application.get('clean_time'),
+                    file_upload_enable=application.get(
+                    'file_upload_enable'),
+                    file_upload_setting=application.get(
+                    'file_upload_setting'),
+                )
 
         @staticmethod
-        def to_function_lib(function_lib, user_id):
+        def to_function_lib(function_lib, user_id, to_dict=False):
             """
 
             @param user_id: 用户id
             @param function_lib: 函数库
             @return:
             """
-            return FunctionLib(id=function_lib.get('id'), user_id=user_id, name=function_lib.get('name'),
-                               code=function_lib.get('code'), input_field_list=function_lib.get('input_field_list'),
-                               is_active=function_lib.get('is_active'),
-                               permission_type=PermissionType.PRIVATE)
+            if to_dict:
+                return {
+                    'id': function_lib.get('id'),
+                    'user_id': user_id,
+                    'name': function_lib.get('name'),
+                    'code': function_lib.get('code'),
+                    'input_field_list': function_lib.get('input_field_list'),
+                    'is_active': function_lib.get('is_active'),
+                    'permission_type': PermissionType.PRIVATE
+                }
+            else:
+                return FunctionLib(id=function_lib.get('id'), user_id=user_id, name=function_lib.get('name'),
+                                   code=function_lib.get('code'), input_field_list=function_lib.get('input_field_list'),
+                                   is_active=function_lib.get('is_active'), permission_type=PermissionType.PRIVATE)
 
         @staticmethod
-        def to_application_dataset_mapping(application_id, dataset_id):
+        def to_application_dataset_mapping(application_id, dataset_id, to_dict=False):
             """
 
             @param user_id: 用户id
             @param function_lib: 函数库
             @return:
             """
-            return ApplicationDatasetMapping(id=uuid.uuid1(), application_id=application_id, dataset_id=dataset_id)
+            if to_dict:
+                return {
+                    'id': uuid.uuid1(),
+                    'application_id': application_id,
+                    'dataset_id': dataset_id
+                }
+            else:
+                return ApplicationDatasetMapping(id=uuid.uuid1(), application_id=application_id, dataset_id=dataset_id)
 
         @staticmethod
-        def to_application_ext(application_ext: Dict, application_id: str):
-            return ApplicationExt(id=uuid.uuid1(), application_id=application_id, **application_ext)
+        def to_application_ext(application_ext: Dict, application_id: str, to_dict=False):
+            if to_dict:
+                return {
+                    'application_id': application_id,
+                    **application_ext
+                }
+            else:
+                return ApplicationExt(id=uuid.uuid1(), application_id=application_id, **application_ext)
 
         @staticmethod
-        def to_application_qa_text(application_qa_text_mapping_list: list, application_id: str):
-            application_qa_text_mapping_model_list = []
-            for application_qa_text_mapping in application_qa_text_mapping_list:
-                application_qa_text_id = application_qa_text_mapping.get(
-                    'application_qa_text_id')
-                application_qa_text_mapping_model_list.append(ApplicationQaTextMapping(id=uuid.uuid1(
-                ), application_id=application_id, application_qa_text_id=application_qa_text_id))
-            return application_qa_text_mapping_model_list
+        def to_application_qa_text(application_qa_text_mapping_list: list, application_id: str, to_dict=False):
+            if to_dict:
+                application_qa_text_list = []
+                for application_qa_text_mapping in application_qa_text_mapping_list:
+                    application_qa_text_id = application_qa_text_mapping.get(
+                        'application_qa_text_id')
+                    application_qa_text = QuerySet(ApplicationQaText).filter(
+                        id=application_qa_text_id).first()
+                    application_qa_text_list.append({ 'subject_identifier': application_qa_text.subject_identifier, 'qa_text': application_qa_text.q_a_text })
+                return application_qa_text_list
+            else:
+                application_qa_text_mapping_model_list = []
+                for application_qa_text_mapping in application_qa_text_mapping_list:
+                    application_qa_text_id = application_qa_text_mapping.get(
+                        'application_qa_text_id')
+                    application_qa_text_mapping_model_list.append(ApplicationQaTextMapping(id=uuid.uuid1(
+                    ), application_id=application_id, application_qa_text_id=application_qa_text_id))
+                return application_qa_text_mapping_model_list
 
     class DatasetCreateSerializer(serializers.Serializer):
         user_id = serializers.UUIDField(
