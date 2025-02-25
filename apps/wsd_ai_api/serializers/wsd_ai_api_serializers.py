@@ -90,13 +90,17 @@ class WsdAiApiSerializers(serializers.Serializer):
                 application_qa_text_mapping_list = application.get(
                     'qa_text_mapping_list', [])
                 if QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').exists():
-                    application_id = QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').first().id
+                    application_id = QuerySet(Application).filter(
+                        name=f'{dsr_name}-{application_ext.get("title")}').first().id
                     application_dict = self.to_application(
                         application, user_id, f'{dsr_name}-{application_ext.get("title")}', True)
                     application_dict['dataset_id_list'] = dataset_id_list
-                    application_dict['ext'] = self.to_application_ext(application_ext=application_ext, application_id=application_id, to_dict=True)
-                    application_dict['qa_texts'] = self.to_application_qa_text(application_qa_text_mapping_list=application_qa_text_mapping_list, application_id=application_id, to_dict=True)
-                    ApplicationExtSerializer.Operate(data={'application_id': application_id, 'user_id': user_id}).edit(application_dict)
+                    application_dict['ext'] = self.to_application_ext(
+                        application_ext=application_ext, application_id=application_id, to_dict=True)
+                    application_dict['qa_texts'] = self.to_application_qa_text(
+                        application_qa_text_mapping_list=application_qa_text_mapping_list, application_id=application_id, to_dict=True)
+                    ApplicationExtSerializer.Operate(
+                        data={'application_id': application_id, 'user_id': user_id}).edit(application_dict)
                 else:
                     if len(function_lib_list) > 0:
                         function_lib_id_list = [function_lib.get(
@@ -261,9 +265,12 @@ class WsdAiApiSerializers(serializers.Serializer):
                 for application_qa_text_mapping in application_qa_text_mapping_list:
                     application_qa_text_id = application_qa_text_mapping.get(
                         'application_qa_text_id')
-                    application_qa_text = QuerySet(ApplicationQaText).filter(
-                        id=application_qa_text_id).first()
-                    application_qa_text_list.append({ 'subject_identifier': application_qa_text.subject_identifier, 'qa_text': application_qa_text.q_a_text })
+                    if QuerySet(ApplicationQaText).filter(
+                            id=application_qa_text_id).exists():
+                        application_qa_text = QuerySet(ApplicationQaText).filter(
+                            id=application_qa_text_id).first()
+                        application_qa_text_list.append(
+                            {'subject_identifier': application_qa_text.subject_identifier, 'qa_text': application_qa_text.q_a_text})
                 return application_qa_text_list
             else:
                 application_qa_text_mapping_model_list = []
