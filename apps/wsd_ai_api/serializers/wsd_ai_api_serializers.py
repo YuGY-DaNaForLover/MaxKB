@@ -90,13 +90,14 @@ class WsdAiApiSerializers(serializers.Serializer):
                 application_qa_text_mapping_list = application.get(
                     'qa_text_mapping_list', [])
                 if QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').exists():
-                    application_id = QuerySet(Application).filter(
-                        name=f'{dsr_name}-{application_ext.get("title")}').first().id
+                    old_application_model = QuerySet(Application).filter(
+                        name=f'{dsr_name}-{application_ext.get("title")}').first()
+                    application_id = old_application_model.id
                     application_dict = self.to_application(
                         application, user_id, f'{dsr_name}-{application_ext.get("title")}', True)
                     application_dict['dataset_id_list'] = dataset_id_list
                     application_dict['ext'] = self.to_application_ext(
-                        application_ext=application_ext, application_id=application_id, to_dict=True)
+                        application_ext={**application_ext, 'subject_identifier': app_subject_identifier}, application_id=application_id, to_dict=True)
                     application_dict['qa_texts'] = self.to_application_qa_text(
                         application_qa_text_mapping_list=application_qa_text_mapping_list, application_id=application_id, to_dict=True)
                     ApplicationExtSerializer.Operate(
@@ -270,7 +271,7 @@ class WsdAiApiSerializers(serializers.Serializer):
                         application_qa_text = QuerySet(ApplicationQaText).filter(
                             id=application_qa_text_id).first()
                         application_qa_text_list.append(
-                            {'subject_identifier': application_qa_text.subject_identifier, 'qa_text': application_qa_text.q_a_text})
+                            {'subject_identifier': application_qa_text.subject_identifier, 'q_a_text': application_qa_text.q_a_text})
                 return application_qa_text_list
             else:
                 application_qa_text_mapping_model_list = []
