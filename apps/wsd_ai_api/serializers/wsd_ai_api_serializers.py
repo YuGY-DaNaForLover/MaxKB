@@ -143,7 +143,7 @@ class WsdAiApiSerializers(serializers.Serializer):
         def to_application(application, user_id, dsr_name, to_dict=False):
             # 默认模型 todo
             model = QuerySet(Model).filter(
-                model_name="deepseek-r1:32b").first()
+                model_name=CONFIG.get_default_model()).first()
             if model is None:
                 raise AppApiException(500, _('Model does not exist'))
             llm_model_id = str(model.id)

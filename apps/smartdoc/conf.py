@@ -125,6 +125,9 @@ class Config(dict):
     
     def get_frontend_url(self):
         return self.get('FRONTEND_URL', None)
+    
+    def get_default_model(self):
+        return self.get('DEFAULT_MODEL', None)
 
     def __init__(self, *args):
         super().__init__(*args)
