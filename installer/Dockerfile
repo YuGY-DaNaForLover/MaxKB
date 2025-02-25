@@ -33,7 +33,8 @@ RUN python3 -m venv /opt/py3 && \
 FROM ghcr.io/1panel-dev/maxkb-python-pg:python3.11-pg15.8
 ARG DOCKER_IMAGE_TAG=dev \
     BUILD_AT \
-    GITHUB_COMMIT
+    GITHUB_COMMIT \
+    FRONTEND_URL=http://127.0.0.1:8080
 
 ENV MAXKB_VERSION="${DOCKER_IMAGE_TAG} (build at ${BUILD_AT}, commit: ${GITHUB_COMMIT})" \
     MAXKB_CONFIG_TYPE=ENV \
@@ -46,7 +47,7 @@ ENV MAXKB_VERSION="${DOCKER_IMAGE_TAG} (build at ${BUILD_AT}, commit: ${GITHUB_C
     MAXKB_EMBEDDING_MODEL_NAME=/opt/maxkb/model/embedding/shibing624_text2vec-base-chinese \
     MAXKB_EMBEDDING_MODEL_PATH=/opt/maxkb/model/embedding \
     DEFAULT_AGENT_MK_INSTANCE=/opt/maxkb/agent \
-    FRONTEND_URL=http://127.0.0.1:3000 \
+    FRONTEND_URL=${FRONTEND_URL} \
     MAXKB_SANDBOX=1 \
     LANG=en_US.UTF-8 \
     PATH=/opt/py3/bin:$PATH \
