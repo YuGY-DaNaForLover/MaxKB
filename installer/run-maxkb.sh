@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 rm -f /opt/maxkb/app/tmp/*.pid
 # Start postgresql
 docker-entrypoint.sh postgres -c max_connections=${POSTGRES_MAX_CONNECTIONS} &

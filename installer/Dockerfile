@@ -16,6 +16,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY . /opt/maxkb/app
+RUN sed -i 's/\r$//' /opt/maxkb/app/installer/run-maxkb.sh
 RUN mkdir -p /opt/maxkb/app /opt/maxkb/model /opt/maxkb/conf /opt/maxkb/agent && \
     rm -rf /opt/maxkb/app/ui
 
