@@ -105,8 +105,7 @@ class ApplicationQaTextView(APIView):
 
 
 class WsdChatInfoView(APIView):
-    authentication_classes = [TokenAuth]
 
     @action(methods=['GET'], detail=False)
     def get(self, request: Request, app_subject_identifier: str):
-        return result.success(WsdChatInfoSerializer(data={'user_id': request.user.id, 'app_subject_identifier': app_subject_identifier}).get())
+        return result.success(WsdChatInfoSerializer(data={'app_subject_identifier': app_subject_identifier}).get())
