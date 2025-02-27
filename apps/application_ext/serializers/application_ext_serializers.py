@@ -240,8 +240,9 @@ class ApplicationExtSerializer(ApplicationSerializer):
             for application_qa_text_mapping in application_qa_text_mapping_list:
                 application_qa_text_id = application_qa_text_mapping.get(
                     'application_qa_text_id')
-                application_qa_text_mapping_model_list.append(ApplicationQaTextMapping(id=uuid.uuid1(
-                ), application_id=application_id, application_qa_text_id=application_qa_text_id))
+                if QuerySet(ApplicationQaText).filter(id=application_qa_text_id).exists():
+                    application_qa_text_mapping_model_list.append(ApplicationQaTextMapping(id=uuid.uuid1(
+                    ), application_id=application_id, application_qa_text_id=application_qa_text_id))
             return application_qa_text_mapping_model_list
 
 

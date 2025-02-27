@@ -4,12 +4,13 @@ import { defineConfig, loadEnv } from 'vite'
 
 import vue from '@vitejs/plugin-vue'
 import DefineOptions from 'unplugin-vue-define-options/vite'
+import legacy from '@vitejs/plugin-legacy'
 
 const envDir = './env'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const ENV = loadEnv(mode, envDir)
-  const prefix = process.env.VITE_DYNAMIC_PREFIX || ENV.VITE_BASE_PATH;
+  const prefix = process.env.VITE_DYNAMIC_PREFIX || ENV.VITE_BASE_PATH
   const proxyConf: Record<string, string | ProxyOptions> = {}
   proxyConf['/api'] = {
     target: 'http://127.0.0.1:8080',
@@ -21,7 +22,34 @@ export default defineConfig(({ mode }) => {
     lintOnSave: false,
     base: prefix,
     envDir: envDir,
-    plugins: [vue(), DefineOptions()],
+    plugins: [
+      vue(),
+      DefineOptions(),
+      //compatible with old browsers
+      legacy({
+        targets: ['chrome >= 70'],
+        additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
+        renderLegacyChunks: true,
+        polyfills: [
+          'es.symbol',
+          'es.array.filter',
+          'es.promise',
+          'es.promise.finally',
+          'es/map',
+          'es/set',
+          'es.array.for-each',
+          'es.object.define-properties',
+          'es.object.define-property',
+          'es.object.get-own-property-descriptor',
+          'es.object.get-own-property-descriptors',
+          'es.object.keys',
+          'es.object.to-string',
+          'web.dom-collections.for-each',
+          'esnext.global-this',
+          'esnext.string.match-all'
+        ]
+      })
+    ],
     server: {
       cors: true,
       host: '0.0.0.0',
