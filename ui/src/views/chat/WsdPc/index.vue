@@ -334,7 +334,7 @@ const addQaText = () => {
 const clickQaText = (item: any) => {
   AiChatRef.value.sendMessage(item.q_a_text)
   if (upBreakPoint.value) {
-    isCollapse.value = false
+    isCollapse.value = true
   }
 }
 function refresh(id: string) {
