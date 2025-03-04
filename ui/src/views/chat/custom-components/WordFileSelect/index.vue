@@ -128,7 +128,7 @@ const getAllId = (list: TreeIter[]) => {
 }
 const getTreeData = () => {
   axios
-    .post('http://192.168.31.8:8089/admin/ai/fileList', {
+    .post(import.meta.env.VITE_APP_TEMPORARY_INTERFACE_URL, {
       app_subject_identifier
     })
     .then((res) => {
