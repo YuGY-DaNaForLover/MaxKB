@@ -25,6 +25,7 @@ import LogoIcon from './logo/LogoIcon.vue'
 import SendIcon from './logo/SendIcon.vue'
 import CodemirrorEditor from './codemirror-editor/index.vue'
 import ModelSelect from './model-select/index.vue'
+import ComTreeSelect from './tree-select/ComTreeSelect.vue'
 
 export default {
   install(app: App) {
@@ -54,5 +55,6 @@ export default {
     app.component(CodemirrorEditor.name!, CodemirrorEditor)
     app.component(MdEditorMagnify.name!, MdEditorMagnify)
     app.component(ModelSelect.name!, ModelSelect)
+    app.component(ComTreeSelect.name!, ComTreeSelect)
   }
 }

@@ -7,7 +7,12 @@
   <div>
     <!-- 语音播放 -->
     <span v-if="tts">
-      <el-tooltip effect="dark" :content="$t('chat.operation.play')" placement="top" v-if="!audioPlayerStatus">
+      <el-tooltip
+        effect="dark"
+        :content="$t('chat.operation.play')"
+        placement="top"
+        v-if="!audioPlayerStatus"
+      >
         <el-button text :disabled="!data?.write_ed" @click="playAnswerText(data?.answer_text)">
           <AppIcon iconName="app-video-play"></AppIcon>
         </el-button>
@@ -20,6 +25,12 @@
       <el-divider direction="vertical" />
     </span>
     <span v-if="type == 'ai-chat' || type == 'log'">
+      <el-tooltip v-if="is_checkbox" effect="dark" content="引入回答" placement="top">
+        <el-button :disabled="chat_loading" text @click="introduceAnswer">
+          <el-icon><Upload /></el-icon>
+        </el-button>
+      </el-tooltip>
+      <el-divider v-if="is_checkbox" direction="vertical" />
       <el-tooltip effect="dark" :content="$t('chat.operation.regeneration')" placement="top">
         <el-button :disabled="chat_loading" text @click="regeneration">
           <el-icon><RefreshRight /></el-icon>
@@ -101,6 +112,7 @@ const props = withDefaults(
     tts: boolean
     tts_type: string
     tts_autoplay: boolean
+    is_checkbox: boolean
   }>(),
   {
     data: () => ({}),
@@ -120,6 +132,12 @@ const currentAudioIndex = ref(0)
 
 function regeneration() {
   emit('regeneration')
+}
+
+function introduceAnswer() {
+  if ((window as any).introduceAnswer && (window as any).introduceAnswer[props.data.id]) {
+    (window as any).introduceAnswer[props.data.id]()
+  }
 }
 
 function voteHandle(val: string) {
@@ -157,9 +175,7 @@ function markdownToPlainText(md: string) {
 }
 
 function removeFormRander(text: string) {
-  return text
-    .replace(/<form_rander>[\s\S]*?<\/form_rander>/g, '')
-    .trim()
+  return text.replace(/<form_rander>[\s\S]*?<\/form_rander>/g, '').trim()
 }
 
 const playAnswerText = (text: string) => {
@@ -174,7 +190,7 @@ const playAnswerText = (text: string) => {
   audioPlayerStatus.value = true
   // 分割成多份
   audioList.value = text.split(/(<audio[^>]*><\/audio>)/).filter((item) => item.trim().length > 0)
-  nextTick(()=>{
+  nextTick(() => {
     // console.log(audioList.value, audioPlayer.value)
     playAnswerTextPart()
   })
@@ -189,7 +205,8 @@ const playAnswerTextPart = () => {
   }
   if (audioList.value[currentAudioIndex.value].includes('<audio')) {
     if (audioPlayer.value) {
-      audioPlayer.value[currentAudioIndex.value].src = audioList.value[currentAudioIndex.value].match(/src="([^"]*)"/)?.[1] || ''
+      audioPlayer.value[currentAudioIndex.value].src =
+        audioList.value[currentAudioIndex.value].match(/src="([^"]*)"/)?.[1] || ''
       audioPlayer.value[currentAudioIndex.value].play() // 自动播放音频
       audioPlayer.value[currentAudioIndex.value].onended = () => {
         currentAudioIndex.value += 1
@@ -224,7 +241,11 @@ const playAnswerTextPart = () => {
       return
     }
     applicationApi
-      .postTextToSpeech((props.applicationId as string) || (id as string), { text: audioList.value[currentAudioIndex.value] }, loading)
+      .postTextToSpeech(
+        (props.applicationId as string) || (id as string),
+        { text: audioList.value[currentAudioIndex.value] },
+        loading
+      )
       .then(async (res: any) => {
         if (res.type === 'application/json') {
           const text = await res.text()
@@ -278,7 +299,12 @@ const pausePlayAnswerText = () => {
 
 onMounted(() => {
   // 第一次回答后自动播放， 打开历史记录不自动播放
-  if (props.tts && props.tts_autoplay && buttonData.value.write_ed && !buttonData.value.update_time) {
+  if (
+    props.tts &&
+    props.tts_autoplay &&
+    buttonData.value.write_ed &&
+    !buttonData.value.update_time
+  ) {
     playAnswerText(buttonData.value.answer_text)
   }
 })

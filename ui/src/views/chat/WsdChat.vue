@@ -5,7 +5,7 @@
         <img width="30" height="30" src="/logo.gif" alt="logo" style="margin-right: 10px" />
         {{ active_application_title }}
       </div>
-      <el-tabs v-model="active_application_id" style="width: 60%">
+      <el-tabs v-model="active_application_id" style="width: 50%">
         <el-tab-pane
           v-for="application in application_data_list"
           :key="application.application_id"
@@ -145,7 +145,7 @@ onBeforeMount(async () => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  background: #efefef;
+  background: linear-gradient(135deg, #f7f0ac, #acf7f0, #f0acf7);
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
   z-index: 100;
 }
@@ -169,5 +169,10 @@ onBeforeMount(async () => {
 
 :deep(.el-tabs__header) {
   margin-bottom: 5px;
+}
+:deep(.el-tabs__nav-wrap) {
+  &::after {
+    background-color: transparent;
+  }
 }
 </style>

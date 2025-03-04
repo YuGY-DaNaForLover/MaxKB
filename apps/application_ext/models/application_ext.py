@@ -12,6 +12,7 @@ class ApplicationExt(AppModelMixin):
     title = models.CharField(max_length=128, verbose_name="应用显示标题")
     subject_identifier = models.CharField(max_length=64, verbose_name="主体标识符", default='')
     q_a_component = models.CharField(max_length=64, verbose_name="问答组件", default='', blank=True)
+    is_checkbox = models.BooleanField(verbose_name="回答是否可以被引入", default=False)
     
     class Meta:
         db_table = "application_ext"

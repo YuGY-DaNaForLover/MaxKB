@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.views import Request
 
 from common.auth import TokenAuth, has_permissions
-from common.constants.permission_constants import Permission, Group, Operate, CompareConstants
+from common.constants.permission_constants import Permission, Group, Operate, CompareConstants, RoleConstants, ViewPermission
 from common.response import result
 from common.util.common import query_params_to_single_dict
 from dataset.serializers.common_serializers import BatchSerializer
@@ -55,7 +55,8 @@ class WebDocument(APIView):
                          operation_id=_('Create Web site documents'),
                          request_body=DocumentWebInstanceSerializer.get_request_body_api(),
                          manual_parameters=DocumentSerializers.Create.get_request_params_api(),
-                         responses=result.get_api_response(DocumentSerializers.Operate.get_response_body_api()),
+                         responses=result.get_api_response(
+                             DocumentSerializers.Operate.get_response_body_api()),
                          tags=[_('Knowledge Base/Documentation')])
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
@@ -73,7 +74,8 @@ class QaDocument(APIView):
     @swagger_auto_schema(operation_summary=_('Import QA and create documentation'),
                          operation_id=_('Import QA and create documentation'),
                          manual_parameters=DocumentWebInstanceSerializer.get_request_params_api(),
-                         responses=result.get_api_response(DocumentSerializers.Create.get_response_body_api()),
+                         responses=result.get_api_response(
+                             DocumentSerializers.Create.get_response_body_api()),
                          tags=[_('Knowledge Base/Documentation')])
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
@@ -93,7 +95,8 @@ class TableDocument(APIView):
     @swagger_auto_schema(operation_summary=_('Import tables and create documents'),
                          operation_id=_('Import tables and create documents'),
                          manual_parameters=DocumentWebInstanceSerializer.get_request_params_api(),
-                         responses=result.get_api_response(DocumentSerializers.Create.get_response_body_api()),
+                         responses=result.get_api_response(
+                             DocumentSerializers.Create.get_response_body_api()),
                          tags=[_('Knowledge Base/Documentation')])
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
@@ -113,7 +116,8 @@ class Document(APIView):
                          operation_id=_('Create document'),
                          request_body=DocumentSerializers.Create.get_request_body_api(),
                          manual_parameters=DocumentSerializers.Create.get_request_params_api(),
-                         responses=result.get_api_response(DocumentSerializers.Operate.get_response_body_api()),
+                         responses=result.get_api_response(
+                             DocumentSerializers.Operate.get_response_body_api()),
                          tags=[_('Knowledge Base/Documentation')])
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
@@ -126,11 +130,12 @@ class Document(APIView):
     @swagger_auto_schema(operation_summary=_('Document list'),
                          operation_id=_('Document list'),
                          manual_parameters=DocumentSerializers.Query.get_request_params_api(),
-                         responses=result.get_api_response(DocumentSerializers.Query.get_response_body_api()),
+                         responses=result.get_api_response(
+                             DocumentSerializers.Query.get_response_body_api()),
                          tags=[_('Knowledge Base/Documentation')])
-    @has_permissions(
-        lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,
-                                dynamic_tag=k.get('dataset_id')))
+    @has_permissions(ViewPermission([RoleConstants.APPLICATION_ACCESS_TOKEN],
+                     [lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,
+                                              dynamic_tag=k.get('dataset_id'))]))
     def get(self, request: Request, dataset_id: str):
         d = DocumentSerializers.Query(
             data={**query_params_to_single_dict(request.query_params), 'dataset_id': dataset_id})
@@ -142,9 +147,9 @@ class Document(APIView):
 
         @action(methods=['POST'], detail=False)
         @swagger_auto_schema(operation_summary=_('Modify document hit processing methods in batches'),
-                             operation_id=_('Modify document hit processing methods in batches'),
-                             request_body=
-                             DocumentApi.BatchEditHitHandlingApi.get_request_body_api(),
+                             operation_id=_(
+                                 'Modify document hit processing methods in batches'),
+                             request_body=DocumentApi.BatchEditHitHandlingApi.get_request_body_api(),
                              manual_parameters=DocumentSerializers.Create.get_request_params_api(),
                              responses=result.get_default_response(),
                              tags=[_('Knowledge Base/Documentation')])
@@ -161,8 +166,7 @@ class Document(APIView):
         @action(methods=['POST'], detail=False)
         @swagger_auto_schema(operation_summary=_('Create documents in batches'),
                              operation_id=_('Create documents in batches'),
-                             request_body=
-                             DocumentSerializers.Batch.get_request_body_api(),
+                             request_body=DocumentSerializers.Batch.get_request_body_api(),
                              manual_parameters=DocumentSerializers.Create.get_request_params_api(),
                              responses=result.get_api_array_response(
                                  DocumentSerializers.Operate.get_response_body_api()),
@@ -176,8 +180,7 @@ class Document(APIView):
         @action(methods=['POST'], detail=False)
         @swagger_auto_schema(operation_summary=_('Batch sync documents'),
                              operation_id=_('Batch sync documents'),
-                             request_body=
-                             BatchSerializer.get_request_body_api(),
+                             request_body=BatchSerializer.get_request_body_api(),
                              manual_parameters=DocumentSerializers.Create.get_request_params_api(),
                              responses=result.get_default_response(),
                              tags=[_('Knowledge Base/Documentation')])
@@ -190,8 +193,7 @@ class Document(APIView):
         @action(methods=['DELETE'], detail=False)
         @swagger_auto_schema(operation_summary=_('Delete documents in batches'),
                              operation_id=_('Delete documents in batches'),
-                             request_body=
-                             BatchSerializer.get_request_body_api(),
+                             request_body=BatchSerializer.get_request_body_api(),
                              manual_parameters=DocumentSerializers.Create.get_request_params_api(),
                              responses=result.get_default_response(),
                              tags=[_('Knowledge Base/Documentation')])
@@ -282,9 +284,9 @@ class Document(APIView):
 
         @action(methods=['PUT'], detail=False)
         @swagger_auto_schema(operation_summary=_('Batch refresh document vector library'),
-                             operation_id=_('Batch refresh document vector library'),
-                             request_body=
-                             DocumentApi.BatchEditHitHandlingApi.get_request_body_api(),
+                             operation_id=_(
+                                 'Batch refresh document vector library'),
+                             request_body=DocumentApi.BatchEditHitHandlingApi.get_request_body_api(),
                              manual_parameters=DocumentSerializers.Create.get_request_params_api(),
                              responses=result.get_default_response(),
                              tags=[_('Knowledge Base/Documentation')])
@@ -303,7 +305,8 @@ class Document(APIView):
                              operation_id=_('Migrate documents in batches'),
                              manual_parameters=DocumentSerializers.Migrate.get_request_params_api(),
                              request_body=DocumentSerializers.Migrate.get_request_body_api(),
-                             responses=result.get_api_response(DocumentSerializers.Operate.get_response_body_api()),
+                             responses=result.get_api_response(
+                                 DocumentSerializers.Operate.get_response_body_api()),
                              tags=[_('Knowledge Base/Documentation')]
                              )
         @has_permissions(
@@ -356,13 +359,15 @@ class Document(APIView):
         @swagger_auto_schema(operation_summary=_('Get document details'),
                              operation_id=_('Get document details'),
                              manual_parameters=DocumentSerializers.Operate.get_request_params_api(),
-                             responses=result.get_api_response(DocumentSerializers.Operate.get_response_body_api()),
+                             responses=result.get_api_response(
+                                 DocumentSerializers.Operate.get_response_body_api()),
                              tags=[_('Knowledge Base/Documentation')])
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,
                                     dynamic_tag=k.get('dataset_id')))
         def get(self, request: Request, dataset_id: str, document_id: str):
-            operate = DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id})
+            operate = DocumentSerializers.Operate(
+                data={'document_id': document_id, 'dataset_id': dataset_id})
             operate.is_valid(raise_exception=True)
             return result.success(operate.one())
 
@@ -371,7 +376,8 @@ class Document(APIView):
                              operation_id=_('Modify document'),
                              manual_parameters=DocumentSerializers.Operate.get_request_params_api(),
                              request_body=DocumentSerializers.Operate.get_request_body_api(),
-                             responses=result.get_api_response(DocumentSerializers.Operate.get_response_body_api()),
+                             responses=result.get_api_response(
+                                 DocumentSerializers.Operate.get_response_body_api()),
                              tags=[_('Knowledge Base/Documentation')]
                              )
         @has_permissions(
@@ -393,7 +399,8 @@ class Document(APIView):
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
         def delete(self, request: Request, dataset_id: str, document_id: str):
-            operate = DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id})
+            operate = DocumentSerializers.Operate(
+                data={'document_id': document_id, 'dataset_id': dataset_id})
             operate.is_valid(raise_exception=True)
             return result.success(operate.delete())
 
@@ -421,11 +428,13 @@ class Document(APIView):
             request_data = request.data
             if 'patterns' in request.data and request.data.get('patterns') is not None and len(
                     request.data.get('patterns')) > 0:
-                split_data.__setitem__('patterns', request_data.getlist('patterns'))
+                split_data.__setitem__(
+                    'patterns', request_data.getlist('patterns'))
             if 'limit' in request.data:
                 split_data.__setitem__('limit', request_data.get('limit'))
             if 'with_filter' in request.data:
-                split_data.__setitem__('with_filter', request_data.get('with_filter'))
+                split_data.__setitem__(
+                    'with_filter', request_data.get('with_filter'))
             ds = DocumentSerializers.Split(
                 data=split_data)
             ds.is_valid(raise_exception=True)
@@ -436,9 +445,11 @@ class Document(APIView):
 
         @action(methods=['GET'], detail=False)
         @swagger_auto_schema(operation_summary=_('Get the knowledge base paginated list'),
-                             operation_id=_('Get the knowledge base paginated list'),
+                             operation_id=_(
+                                 'Get the knowledge base paginated list'),
                              manual_parameters=DocumentSerializers.Query.get_request_params_api(),
-                             responses=result.get_page_api_response(DocumentSerializers.Query.get_response_body_api()),
+                             responses=result.get_page_api_response(
+                                 DocumentSerializers.Query.get_response_body_api()),
                              tags=[_('Knowledge Base/Documentation')])
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,

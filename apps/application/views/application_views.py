@@ -582,12 +582,12 @@ class Application(APIView):
                              responses=result.get_api_array_response(
                                  DataSetSerializers.Query.get_response_body_api()),
                              tags=[_('Application')])
-        @has_permissions(ViewPermission([RoleConstants.ADMIN, RoleConstants.USER],
+        @has_permissions(ViewPermission([RoleConstants.ADMIN, RoleConstants.USER, RoleConstants.APPLICATION_ACCESS_TOKEN],
                                         [lambda r, keywords: Permission(group=Group.APPLICATION,
                                                                         operate=Operate.USE,
                                                                         dynamic_tag=keywords.get(
                                                                             'application_id'))],
-                                        compare=CompareConstants.AND))
+                                        compare=CompareConstants.OR))
         def get(self, request: Request, application_id: str):
             return result.success(ApplicationSerializer.Operate(
                 data={'application_id': application_id, 'user_id': request.user.id}).list_dataset())

@@ -31,6 +31,7 @@ class Ext(serializers.Serializer):
         required=False, allow_null=True, allow_blank=True)
     q_a_component = serializers.CharField(
         required=False, allow_null=True, allow_blank=True)
+    is_checkbox = serializers.BooleanField(required=False)
 
 
 class QaText(serializers.Serializer):

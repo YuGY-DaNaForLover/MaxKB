@@ -145,9 +145,13 @@
           :appId="applicationDetail?.id"
           :record="currentRecordList"
           :chatId="currentChatId"
+          :exclude_paragraph_id_list="exclude_paragraph_id_list"
           @refresh="refresh"
           @scroll="handleScroll"
         >
+          <template #operateBefore>
+            <component :is="getCustomComponent" v-bind="customProps" />
+          </template>
         </AiChat>
       </div>
     </div>
@@ -155,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, onBeforeUnmount, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Delete } from '@element-plus/icons-vue'
 import useStore from '@/stores'
@@ -200,6 +204,7 @@ const qaTexts = ref(applicationDetail.value.qa_texts || [])
 const loading = ref(false)
 const mouseId = ref('')
 const AiChatRef = ref()
+const exclude_paragraph_id_list = ref<string[]>([])
 
 // 添加响应式断点（示例为1500px，可根据需要调整）
 const breakPoint = 1500
@@ -215,12 +220,11 @@ const handleResize = () => {
   upBreakPoint.value = window.innerWidth < breakPoint
 }
 
-watch(
-  () => props.application_profile,
-  (newVal) => {
-    qaTexts.value = newVal.qa_texts || []
+watchEffect(() => {
+  if (props.application_profile) {
+    qaTexts.value = props.application_profile.qa_texts || []
   }
-)
+})
 function mouseenter(row: any) {
   mouseId.value = row.id
 }
@@ -354,6 +358,52 @@ function handleScroll(event: any) {
     })
   }
 }
+
+/**
+ * 获取自定义问答组件
+ */
+const components: any = import.meta.glob('@/views/chat/custom-components/**/index.vue', {
+  eager: true
+})
+const getCustomComponent = computed(() => {
+  if (applicationDetail.value.ext.q_a_component) {
+    const name = `/src/views/chat/custom-components/${applicationDetail.value.ext.q_a_component}/index.vue`
+    return components[name].default
+  } else return null
+})
+const customPropsObj = computed<{ [key: string]: any }>(() => {
+  return {
+    NewChatButton: {
+      newChat
+    },
+    QaText: {
+      qaTexts: qaTexts.value,
+      clickQaText,
+      deleteQaText
+    },
+    WordFileSelect: {
+      dataset_id_list: applicationDetail.value.dataset_id_list,
+      onCallBack: (list: string[]) => {
+        exclude_paragraph_id_list.value = list
+      }
+    },
+    AllComponent: {
+      newChat,
+      qaTexts: qaTexts.value,
+      clickQaText,
+      deleteQaText,
+      dataset_id_list: applicationDetail.value.dataset_id_list,
+      onWordFileCallBack: (list: string[]) => {
+        exclude_paragraph_id_list.value = list
+      }
+    }
+  }
+})
+const customProps = computed(() => {
+  if (applicationDetail.value.ext.q_a_component) {
+    return customPropsObj.value[applicationDetail.value.ext.q_a_component]
+  } else return {}
+})
 
 /**
  *初始化历史对话记录

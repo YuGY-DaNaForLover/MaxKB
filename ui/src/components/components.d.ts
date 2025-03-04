@@ -24,6 +24,7 @@ import LogoIcon from './logo/LogoIcon.vue'
 import SendIcon from './logo/SendIcon.vue'
 import CodemirrorEditor from './codemirror-editor/index.vue'
 import ModelSelect from './model-select/index.vue'
+import ComTreeSelect from './tree-select/ComTreeSelect.vue'
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
@@ -53,5 +54,6 @@ declare module '@vue/runtime-core' {
     SendIcon: typeof SendIcon
     CodemirrorEditor: typeof CodemirrorEditor
     ModelSelect: typeof ModelSelect
+    ComTreeSelect: typeof ComTreeSelect
   }
 }

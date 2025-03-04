@@ -84,6 +84,7 @@ const props = withDefaults(
     record?: Array<chatType>
     available?: boolean
     chatId?: string
+    exclude_paragraph_id_list?: string[]
   }>(),
   {
     applicationDetails: () => ({}),
@@ -330,6 +331,7 @@ function chatMessage(chat?: any, problem?: string, re_chat?: boolean, other_para
     const obj = {
       message: chat.problem_text,
       re_chat: re_chat || false,
+      exclude_paragraph_id_list: props.exclude_paragraph_id_list,
       ...other_params_data,
       form_data: {
         ...form_data.value,

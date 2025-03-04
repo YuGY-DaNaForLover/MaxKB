@@ -120,6 +120,7 @@ class ChatView(APIView):
                                                            dynamic_tag=keywords.get('application_id'))])
         )
         def post(self, request: Request, chat_id: str):
+            print(request.data)
             return ChatMessageSerializer(data={'chat_id': chat_id, 'message': request.data.get('message'),
                                                're_chat': (request.data.get(
                                                    're_chat') if 're_chat' in request.data else False),
@@ -142,7 +143,8 @@ class ChatView(APIView):
                                                'runtime_node_id': request.data.get('runtime_node_id', None),
                                                'node_data': request.data.get('node_data', {}),
                                                'chat_record_id': request.data.get('chat_record_id'),
-                                               'child_node': request.data.get('child_node')}
+                                               'child_node': request.data.get('child_node'),
+                                               'exclude_paragraph_id_list': request.data.get('exclude_paragraph_id_list')}
                                          ).chat()
 
     @action(methods=['GET'], detail=False)

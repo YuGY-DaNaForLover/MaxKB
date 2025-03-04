@@ -121,11 +121,13 @@
               </el-form-item>
               <el-form-item
                 prop="model_setting.no_references_prompt"
-                :rules="{
-                  required: applicationForm.model_id,
-                  message: $t('views.application.applicationForm.form.prompt.requiredMessage'),
-                  trigger: 'blur'
-                }"
+                :rules="[
+                  {
+                    required: applicationForm.model_id,
+                    message: $t('views.application.applicationForm.form.prompt.requiredMessage'),
+                    trigger: 'blur'
+                  }
+                ]"
               >
                 <template #label>
                   <div class="flex align-center">
@@ -250,11 +252,13 @@
               <el-form-item
                 :label="$t('views.application.applicationForm.form.prompt.label')"
                 prop="model_setting.prompt"
-                :rules="{
-                  required: applicationForm.model_id,
-                  message: $t('views.application.applicationForm.form.prompt.requiredMessage'),
-                  trigger: 'blur'
-                }"
+                :rules="[
+                  {
+                    required: applicationForm.model_id,
+                    message: $t('views.application.applicationForm.form.prompt.requiredMessage'),
+                    trigger: 'blur'
+                  }
+                ]"
               >
                 <template #label>
                   <div class="flex align-center">
@@ -448,6 +452,13 @@
               <el-form-item label="问答组件">
                 <el-input v-model="applicationForm.ext.q_a_component" />
               </el-form-item>
+              <el-form-item label="回答是否可以被引入">
+                <el-switch
+                  v-model="applicationForm.ext.is_checkbox"
+                  :active-value="true"
+                  :inactive-value="false"
+                ></el-switch>
+              </el-form-item>
               <el-form-item label="常用问答">
                 <QaTextManager v-model="applicationForm.qa_texts" />
               </el-form-item>
@@ -542,6 +553,8 @@ import TTSModeParamSettingDialog from './component/TTSModeParamSettingDialog.vue
 import ReasoningParamSettingDialog from './component/ReasoningParamSettingDialog.vue'
 import QaTextManager from './component/QaTextManager.vue'
 
+const APPLICATION_IS_CHECKBOX_PROMPT = `\n - 不管回答多少次，都需要将回答内容放到<checkbox_render></checkbox_render>中间\n - 多使用标题正文的形式回答`
+
 const { application } = useStore()
 
 const route = useRoute()
@@ -607,7 +620,8 @@ const applicationForm = ref<ApplicationFormType>({
   ext: {
     title: '',
     subject_identifier: '',
-    q_a_component: ''
+    q_a_component: '',
+    is_checkbox: false
   },
   qa_texts: []
 })
@@ -651,11 +665,31 @@ function submitReasoningDialog(val: any) {
     ...val
   }
 }
+function isCheckboxHandler() {
+  if (applicationForm.value.ext.is_checkbox) {
+    if (applicationForm.value.model_setting?.prompt.includes(APPLICATION_IS_CHECKBOX_PROMPT)) return
+    submitPromptDialog(
+      applicationForm.value.model_setting?.prompt
+        ? `${applicationForm.value.model_setting.prompt}${APPLICATION_IS_CHECKBOX_PROMPT}`
+        : APPLICATION_IS_CHECKBOX_PROMPT
+    )
+  } else {
+    submitPromptDialog(
+      applicationForm.value.model_setting?.prompt
+        ? applicationForm.value.model_setting.prompt.replace(
+            `${APPLICATION_IS_CHECKBOX_PROMPT}`,
+            ''
+          )
+        : ''
+    )
+  }
+}
 
 const submit = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
-  await formEl.validate((valid, fields) => {
+  await formEl.validate((valid) => {
     if (valid) {
+      isCheckboxHandler()
       application.asyncPutApplication(id, applicationForm.value, loading).then((res) => {
         MsgSuccess(t('common.saveSuccess'))
       })
@@ -685,6 +719,7 @@ const saveAsTemplate = async (formEl: FormInstance | undefined) => {
   await formEl.validate((valid) => {
     if (valid) {
       loading.value = true
+      isCheckboxHandler()
       applicationApi
         .saveAsTemplate({
           ...applicationForm.value,
@@ -762,7 +797,8 @@ function getDetail() {
       applicationForm.value.ext = {
         subject_identifier: '',
         q_a_component: '',
-        title: ''
+        title: '',
+        is_checkbox: false
       }
     }
     applicationForm.value.ext.subject_identifier = res.data.ext?.subject_identifier || ''

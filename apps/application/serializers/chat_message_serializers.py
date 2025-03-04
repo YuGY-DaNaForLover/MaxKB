@@ -70,8 +70,10 @@ class ChatInfo:
                 'status': 'ai_questioning',
                 'value': '{question}'})
         if no_references_setting.get('status') == 'ai_questioning':
-            no_references_prompt = model_setting.get('no_references_prompt', '{question}')
-            no_references_setting['value'] = no_references_prompt if len(no_references_prompt) > 0 else "{question}"
+            no_references_prompt = model_setting.get(
+                'no_references_prompt', '{question}')
+            no_references_setting['value'] = no_references_prompt if len(
+                no_references_prompt) > 0 else "{question}"
         return no_references_setting
 
     def to_base_pipeline_manage_params(self):
@@ -81,8 +83,10 @@ class ChatInfo:
         model_params_setting = None
         if model_id is not None:
             model = QuerySet(Model).filter(id=model_id).first()
-            credential = get_model_credential(model.provider, model.model_type, model.model_name)
-            model_params_setting = credential.get_model_params_setting_form(model.model_name).get_default_form_data()
+            credential = get_model_credential(
+                model.provider, model.model_type, model.model_name)
+            model_params_setting = credential.get_model_params_setting_form(
+                model.model_name).get_default_form_data()
         return {
             'dataset_id_list': self.dataset_id_list,
             'exclude_document_id_list': self.exclude_document_id_list,
@@ -99,7 +103,7 @@ class ChatInfo:
                 "() contains the user's question. Answer the guessed user's question based on the context ({question}) Requirement: Output a complete question and put it in the <data></data> tag"),
             'prompt': model_setting.get(
                 'prompt') if 'prompt' in model_setting and len(model_setting.get(
-                'prompt')) > 0 else Application.get_default_model_prompt(),
+                    'prompt')) > 0 else Application.get_default_model_prompt(),
             'system': model_setting.get(
                 'system', None),
             'model_id': model_id,
@@ -123,8 +127,10 @@ class ChatInfo:
                 'client_type': client_type}
 
     def append_chat_record(self, chat_record: ChatRecord, client_id=None):
-        chat_record.problem_text = chat_record.problem_text[0:10240] if chat_record.problem_text is not None else ""
-        chat_record.answer_text = chat_record.answer_text[0:40960] if chat_record.problem_text is not None else ""
+        chat_record.problem_text = chat_record.problem_text[0:
+                                                            10240] if chat_record.problem_text is not None else ""
+        chat_record.answer_text = chat_record.answer_text[0:
+                                                          40960] if chat_record.problem_text is not None else ""
         is_save = True
         # 存入缓存中
         for index in range(len(self.chat_record_list)):
@@ -140,7 +146,8 @@ class ChatInfo:
                 Chat(id=self.chat_id, application_id=self.application.id, abstract=chat_record.problem_text[0:1024],
                      client_id=client_id, update_time=datetime.now()).save()
             else:
-                Chat.objects.filter(id=self.chat_id).update(update_time=datetime.now())
+                Chat.objects.filter(id=self.chat_id).update(
+                    update_time=datetime.now())
             # 插入会话记录
             chat_record.save()
 
@@ -180,21 +187,29 @@ def get_post_handler(chat_info: ChatInfo):
 
 
 class OpenAIMessage(serializers.Serializer):
-    content = serializers.CharField(required=True, error_messages=ErrMessage.char(_('content')))
-    role = serializers.CharField(required=True, error_messages=ErrMessage.char(_('Role')))
+    content = serializers.CharField(
+        required=True, error_messages=ErrMessage.char(_('content')))
+    role = serializers.CharField(
+        required=True, error_messages=ErrMessage.char(_('Role')))
 
 
 class OpenAIInstanceSerializer(serializers.Serializer):
     messages = serializers.ListField(child=OpenAIMessage())
-    chat_id = serializers.UUIDField(required=False, error_messages=ErrMessage.char(_("Conversation ID")))
-    re_chat = serializers.BooleanField(required=False, error_messages=ErrMessage.boolean(_("Regenerate")))
-    stream = serializers.BooleanField(required=False, error_messages=ErrMessage.boolean(_("Streaming Output")))
+    chat_id = serializers.UUIDField(
+        required=False, error_messages=ErrMessage.char(_("Conversation ID")))
+    re_chat = serializers.BooleanField(
+        required=False, error_messages=ErrMessage.boolean(_("Regenerate")))
+    stream = serializers.BooleanField(
+        required=False, error_messages=ErrMessage.boolean(_("Streaming Output")))
 
 
 class OpenAIChatSerializer(serializers.Serializer):
-    application_id = serializers.UUIDField(required=True, error_messages=ErrMessage.uuid(_("Application ID")))
-    client_id = serializers.CharField(required=True, error_messages=ErrMessage.char(_("Client id")))
-    client_type = serializers.CharField(required=True, error_messages=ErrMessage.char(_("Client Type")))
+    application_id = serializers.UUIDField(
+        required=True, error_messages=ErrMessage.uuid(_("Application ID")))
+    client_id = serializers.CharField(
+        required=True, error_messages=ErrMessage.char(_("Client id")))
+    client_type = serializers.CharField(
+        required=True, error_messages=ErrMessage.char(_("Client Type")))
 
     @staticmethod
     def get_message(instance):
@@ -206,13 +221,15 @@ class OpenAIChatSerializer(serializers.Serializer):
             chat_id = str(uuid.uuid1())
         chat = QuerySet(Chat).filter(id=chat_id).first()
         if chat is None:
-            Chat(id=chat_id, application_id=application_id, abstract=message[0:1024], client_id=client_id).save()
+            Chat(id=chat_id, application_id=application_id,
+                 abstract=message[0:1024], client_id=client_id).save()
         return chat_id
 
     def chat(self, instance: Dict, with_valid=True):
         if with_valid:
             self.is_valid(raise_exception=True)
-            OpenAIInstanceSerializer(data=instance).is_valid(raise_exception=True)
+            OpenAIInstanceSerializer(
+                data=instance).is_valid(raise_exception=True)
         chat_id = instance.get('chat_id')
         message = self.get_message(instance)
         re_chat = instance.get('re_chat', False)
@@ -220,7 +237,8 @@ class OpenAIChatSerializer(serializers.Serializer):
         application_id = self.data.get('application_id')
         client_id = self.data.get('client_id')
         client_type = self.data.get('client_type')
-        chat_id = self.generate_chat(chat_id, application_id, message, client_id)
+        chat_id = self.generate_chat(
+            chat_id, application_id, message, client_id)
         return ChatMessageSerializer(
             data={'chat_id': chat_id, 'message': message,
                   're_chat': re_chat,
@@ -232,11 +250,14 @@ class OpenAIChatSerializer(serializers.Serializer):
 
 
 class ChatMessageSerializer(serializers.Serializer):
-    chat_id = serializers.UUIDField(required=True, error_messages=ErrMessage.uuid(_("Conversation ID")))
-    message = serializers.CharField(required=True, error_messages=ErrMessage.char(_("User Questions")))
+    chat_id = serializers.UUIDField(
+        required=True, error_messages=ErrMessage.uuid(_("Conversation ID")))
+    message = serializers.CharField(
+        required=True, error_messages=ErrMessage.char(_("User Questions")))
     stream = serializers.BooleanField(required=True,
                                       error_messages=ErrMessage.char(_("Is the answer in streaming mode")))
-    re_chat = serializers.BooleanField(required=True, error_messages=ErrMessage.char(_("Do you want to reply again")))
+    re_chat = serializers.BooleanField(
+        required=True, error_messages=ErrMessage.char(_("Do you want to reply again")))
     chat_record_id = serializers.UUIDField(required=False, allow_null=True,
                                            error_messages=ErrMessage.uuid(_("Conversation record id")))
 
@@ -250,14 +271,22 @@ class ChatMessageSerializer(serializers.Serializer):
                                       error_messages=ErrMessage.char(_("Node parameters")))
     application_id = serializers.UUIDField(required=False, allow_null=True,
                                            error_messages=ErrMessage.uuid(_("Application ID")))
-    client_id = serializers.CharField(required=True, error_messages=ErrMessage.char(_("Client id")))
-    client_type = serializers.CharField(required=True, error_messages=ErrMessage.char(_("Client Type")))
-    form_data = serializers.DictField(required=False, error_messages=ErrMessage.char(_("Global variables")))
-    image_list = serializers.ListField(required=False, error_messages=ErrMessage.list(_("picture")))
-    document_list = serializers.ListField(required=False, error_messages=ErrMessage.list(_("document")))
-    audio_list = serializers.ListField(required=False, error_messages=ErrMessage.list(_("Audio")))
+    client_id = serializers.CharField(
+        required=True, error_messages=ErrMessage.char(_("Client id")))
+    client_type = serializers.CharField(
+        required=True, error_messages=ErrMessage.char(_("Client Type")))
+    form_data = serializers.DictField(
+        required=False, error_messages=ErrMessage.char(_("Global variables")))
+    image_list = serializers.ListField(
+        required=False, error_messages=ErrMessage.list(_("picture")))
+    document_list = serializers.ListField(
+        required=False, error_messages=ErrMessage.list(_("document")))
+    audio_list = serializers.ListField(
+        required=False, error_messages=ErrMessage.list(_("Audio")))
     child_node = serializers.DictField(required=False, allow_null=True,
                                        error_messages=ErrMessage.dict(_("Child Nodes")))
+    exclude_paragraph_id_list =  serializers.ListField(
+        required=False, error_messages=ErrMessage.list(_("paragraph_id_list")))
 
     def is_valid_application_workflow(self, *, raise_exception=False):
         self.is_valid_intraday_access_num()
@@ -274,7 +303,8 @@ class ChatMessageSerializer(serializers.Serializer):
                                                                                'application_id')).first()
             if access_client is None:
                 access_client = ApplicationPublicAccessClient(client_id=self.data.get('client_id'),
-                                                              application_id=self.data.get('application_id'),
+                                                              application_id=self.data.get(
+                                                                  'application_id'),
                                                               access_num=0,
                                                               intraday_access_num=0)
                 access_client.save()
@@ -282,7 +312,8 @@ class ChatMessageSerializer(serializers.Serializer):
             application_access_token = QuerySet(ApplicationAccessToken).filter(
                 application_id=self.data.get('application_id')).first()
             if application_access_token.access_num <= access_client.intraday_access_num:
-                raise AppChatNumOutOfBoundsFailed(1002, _("The number of visits exceeds today's visits"))
+                raise AppChatNumOutOfBoundsFailed(
+                    1002, _("The number of visits exceeds today's visits"))
 
     def is_valid_application_simple(self, *, chat_info: ChatInfo, raise_exception=False):
         self.is_valid_intraday_access_num()
@@ -295,7 +326,8 @@ class ChatMessageSerializer(serializers.Serializer):
         if model.status == Status.ERROR:
             raise ChatException(500, _("The current model is not available"))
         if model.status == Status.DOWNLOAD:
-            raise ChatException(500, _("The model is downloading, please try again later"))
+            raise ChatException(
+                500, _("The model is downloading, please try again later"))
         return chat_info
 
     def chat_simple(self, chat_info: ChatInfo, base_to_response):
@@ -323,6 +355,9 @@ class ChatMessageSerializer(serializers.Serializer):
                  chat_record.problem_text == message and 'search_step' in chat_record.details and 'paragraph_list' in
                  chat_record.details['search_step']])
             exclude_paragraph_id_list = list(set(paragraph_id_list))
+        if self.data.get('exclude_paragraph_id_list') is not None:
+            exclude_paragraph_id_list = [
+                *exclude_paragraph_id_list, *self.data.get('exclude_paragraph_id_list')]
         # 构建运行参数
         params = chat_info.to_pipeline_manage_params(message, get_post_handler(chat_info), exclude_paragraph_id_list,
                                                      client_id, client_type, stream)
@@ -337,7 +372,8 @@ class ChatMessageSerializer(serializers.Serializer):
                                 str(chat_record.id) == str(chat_record_id)]
             if chat_record_list is not None and len(chat_record_list):
                 return chat_record_list[-1]
-        chat_record = QuerySet(ChatRecord).filter(id=chat_record_id, chat_id=chat_info.chat_id).first()
+        chat_record = QuerySet(ChatRecord).filter(
+            id=chat_record_id, chat_id=chat_info.chat_id).first()
         if chat_record is None:
             raise ChatException(500, _("Conversation record does not exist"))
         chat_record = QuerySet(ChatRecord).filter(id=chat_record_id).first()
@@ -359,11 +395,12 @@ class ChatMessageSerializer(serializers.Serializer):
         history_chat_record = chat_info.chat_record_list
         if chat_record_id is not None:
             chat_record = self.get_chat_record(chat_info, chat_record_id)
-            history_chat_record = [r for r in chat_info.chat_record_list if str(r.id) != chat_record_id]
+            history_chat_record = [
+                r for r in chat_info.chat_record_list if str(r.id) != chat_record_id]
         work_flow_manage = WorkflowManage(Flow.new_instance(chat_info.work_flow_version.work_flow),
                                           {'history_chat_record': history_chat_record, 'question': message,
                                            'chat_id': chat_info.chat_id, 'chat_record_id': str(
-                                              uuid.uuid1()) if chat_record is None else chat_record.id,
+                                               uuid.uuid1()) if chat_record is None else chat_record.id,
                                            'stream': stream,
                                            're_chat': re_chat,
                                            'client_id': client_id,
@@ -380,7 +417,8 @@ class ChatMessageSerializer(serializers.Serializer):
         chat_info = self.get_chat_info()
         self.is_valid_chat_id(chat_info)
         if chat_info.application.type == ApplicationTypeChoices.SIMPLE:
-            self.is_valid_application_simple(raise_exception=True, chat_info=chat_info),
+            self.is_valid_application_simple(
+                raise_exception=True, chat_info=chat_info),
             return self.chat_simple(chat_info, base_to_response)
         else:
             self.is_valid_application_workflow(raise_exception=True)
@@ -400,7 +438,8 @@ class ChatMessageSerializer(serializers.Serializer):
         chat = QuerySet(Chat).filter(id=chat_id).first()
         if chat is None:
             raise ChatException(500, _("Conversation does not exist"))
-        application = QuerySet(Application).filter(id=chat.application_id).first()
+        application = QuerySet(Application).filter(
+            id=chat.application_id).first()
         if application is None:
             raise ChatException(500, _("Application does not exist"))
         if application.type == ApplicationTypeChoices.SIMPLE:
@@ -420,8 +459,10 @@ class ChatMessageSerializer(serializers.Serializer):
                                     QuerySet(Document).filter(
                                         dataset_id__in=dataset_id_list,
                                         is_active=False)]
-        chat_info = ChatInfo(chat_id, dataset_id_list, exclude_document_id_list, application)
-        chat_record_list = list(QuerySet(ChatRecord).filter(chat_id=chat_id).order_by('-create_time')[0:5])
+        chat_info = ChatInfo(chat_id, dataset_id_list,
+                             exclude_document_id_list, application)
+        chat_record_list = list(QuerySet(ChatRecord).filter(
+            chat_id=chat_id).order_by('-create_time')[0:5])
         chat_record_list.sort(key=lambda r: r.create_time)
         for chat_record in chat_record_list:
             chat_info.chat_record_list.append(chat_record)
@@ -432,10 +473,12 @@ class ChatMessageSerializer(serializers.Serializer):
         work_flow_version = QuerySet(WorkFlowVersion).filter(application_id=application.id).order_by(
             '-create_time')[0:1].first()
         if work_flow_version is None:
-            raise ChatException(500, _("The application has not been published. Please use it after publishing."))
+            raise ChatException(500, _(
+                "The application has not been published. Please use it after publishing."))
 
         chat_info = ChatInfo(chat_id, [], [], application, work_flow_version)
-        chat_record_list = list(QuerySet(ChatRecord).filter(chat_id=chat_id).order_by('-create_time')[0:5])
+        chat_record_list = list(QuerySet(ChatRecord).filter(
+            chat_id=chat_id).order_by('-create_time')[0:5])
         chat_record_list.sort(key=lambda r: r.create_time)
         for chat_record in chat_record_list:
             chat_info.chat_record_list.append(chat_record)

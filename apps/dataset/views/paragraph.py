@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.views import Request
 
 from common.auth import TokenAuth, has_permissions
-from common.constants.permission_constants import Permission, Group, Operate, CompareConstants
+from common.constants.permission_constants import Permission, Group, Operate, CompareConstants, ViewPermission, RoleConstants
 from common.response import result
 from common.util.common import query_params_to_single_dict
 from dataset.serializers.common_serializers import BatchSerializer
@@ -27,12 +27,13 @@ class Paragraph(APIView):
     @swagger_auto_schema(operation_summary=_('Paragraph list'),
                          operation_id=_('Paragraph list'),
                          manual_parameters=ParagraphSerializers.Query.get_request_params_api(),
-                         responses=result.get_api_array_response(ParagraphSerializers.Query.get_response_body_api()),
+                         responses=result.get_api_array_response(
+                             ParagraphSerializers.Query.get_response_body_api()),
                          tags=[_('Knowledge Base/Documentation/Paragraph')]
                          )
     @has_permissions(
-        lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,
-                                dynamic_tag=k.get('dataset_id')))
+        ViewPermission([RoleConstants.APPLICATION_ACCESS_TOKEN], [lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,
+                                                                                          dynamic_tag=k.get('dataset_id'))]))
     def get(self, request: Request, dataset_id: str, document_id: str):
         q = ParagraphSerializers.Query(
             data={**query_params_to_single_dict(request.query_params), 'dataset_id': dataset_id,
@@ -45,7 +46,8 @@ class Paragraph(APIView):
                          operation_id=_('Create Paragraph'),
                          manual_parameters=ParagraphSerializers.Create.get_request_params_api(),
                          request_body=ParagraphSerializers.Create.get_request_body_api(),
-                         responses=result.get_api_response(ParagraphSerializers.Query.get_response_body_api()),
+                         responses=result.get_api_response(
+                             ParagraphSerializers.Query.get_response_body_api()),
                          tags=[_('Knowledge Base/Documentation/Paragraph')])
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
@@ -62,7 +64,8 @@ class Paragraph(APIView):
                              operation_id=_('Add associated questions'),
                              manual_parameters=ParagraphSerializers.Problem.get_request_params_api(),
                              request_body=ParagraphSerializers.Problem.get_request_body_api(),
-                             responses=result.get_api_response(ParagraphSerializers.Problem.get_response_body_api()),
+                             responses=result.get_api_response(
+                                 ParagraphSerializers.Problem.get_response_body_api()),
                              tags=[_('Knowledge Base/Documentation/Paragraph')])
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
@@ -74,7 +77,8 @@ class Paragraph(APIView):
 
         @action(methods=['GET'], detail=False)
         @swagger_auto_schema(operation_summary=_('Get a list of paragraph questions'),
-                             operation_id=_('Get a list of paragraph questions'),
+                             operation_id=_(
+                                 'Get a list of paragraph questions'),
                              manual_parameters=ParagraphSerializers.Problem.get_request_params_api(),
                              responses=result.get_api_array_response(
                                  ParagraphSerializers.Problem.get_response_body_api()),
@@ -129,8 +133,7 @@ class Paragraph(APIView):
                              operation_id=_('Modify paragraph data'),
                              manual_parameters=ParagraphSerializers.Operate.get_request_params_api(),
                              request_body=ParagraphSerializers.Operate.get_request_body_api(),
-                             responses=result.get_api_response(ParagraphSerializers.Operate.get_response_body_api())
-            , tags=[_('Knowledge Base/Documentation/Paragraph')])
+                             responses=result.get_api_response(ParagraphSerializers.Operate.get_response_body_api()), tags=[_('Knowledge Base/Documentation/Paragraph')])
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
@@ -144,7 +147,8 @@ class Paragraph(APIView):
         @swagger_auto_schema(operation_summary=_('Get paragraph details'),
                              operation_id=_('Get paragraph details'),
                              manual_parameters=ParagraphSerializers.Operate.get_request_params_api(),
-                             responses=result.get_api_response(ParagraphSerializers.Operate.get_response_body_api()),
+                             responses=result.get_api_response(
+                                 ParagraphSerializers.Operate.get_response_body_api()),
                              tags=[_('Knowledge Base/Documentation/Paragraph')])
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,
@@ -176,8 +180,7 @@ class Paragraph(APIView):
         @action(methods=['DELETE'], detail=False)
         @swagger_auto_schema(operation_summary=_('Delete paragraphs in batches'),
                              operation_id=_('Delete paragraphs in batches'),
-                             request_body=
-                             BatchSerializer.get_request_body_api(),
+                             request_body=BatchSerializer.get_request_body_api(),
                              manual_parameters=ParagraphSerializers.Create.get_request_params_api(),
                              responses=result.get_default_response(),
                              tags=[_('Knowledge Base/Documentation/Paragraph')])
@@ -219,10 +222,12 @@ class Paragraph(APIView):
 
         @action(methods=['GET'], detail=False)
         @swagger_auto_schema(operation_summary=_('Get paragraph list by pagination'),
-                             operation_id=_('Get paragraph list by pagination'),
+                             operation_id=_(
+                                 'Get paragraph list by pagination'),
                              manual_parameters=result.get_page_request_params(
                                  ParagraphSerializers.Query.get_request_params_api()),
-                             responses=result.get_page_api_response(ParagraphSerializers.Query.get_response_body_api()),
+                             responses=result.get_page_api_response(
+                                 ParagraphSerializers.Query.get_response_body_api()),
                              tags=[_('Knowledge Base/Documentation/Paragraph')])
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.USE,
@@ -243,5 +248,6 @@ class Paragraph(APIView):
                                     dynamic_tag=k.get('dataset_id')))
         def put(self, request: Request, dataset_id: str, document_id: str):
             return result.success(
-                ParagraphSerializers.BatchGenerateRelated(data={'dataset_id': dataset_id, 'document_id': document_id})
+                ParagraphSerializers.BatchGenerateRelated(
+                    data={'dataset_id': dataset_id, 'document_id': document_id})
                 .batch_generate_related(request.data))

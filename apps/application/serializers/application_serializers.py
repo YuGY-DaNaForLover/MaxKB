@@ -955,6 +955,13 @@ class ApplicationSerializer(serializers.Serializer):
                 if work_flow_version is not None:
                     application.work_flow = work_flow_version.work_flow
 
+            dataset_list = self.list_dataset(with_valid=False)
+            mapping_dataset_id_list = [adm.dataset_id for adm in
+                                       QuerySet(ApplicationDatasetMapping).filter(application_id=application_id)]
+            dataset_id_list = [d.get('id') for d in
+                               list(filter(lambda row: mapping_dataset_id_list.__contains__(row.get('id')),
+                                           dataset_list))]
+
             xpack_cache = DBModelManage.get_model('xpack_cache')
             X_PACK_LICENSE_IS_VALID = False if xpack_cache is None else xpack_cache.get('XPACK_LICENSE_IS_VALID', False)
             application_setting_dict = {}
@@ -1002,6 +1009,7 @@ class ApplicationSerializer(serializers.Serializer):
                  'work_flow': application.work_flow,
                  'show_source': application_access_token.show_source,
                  'language': application_access_token.language,
+                 'dataset_id_list': dataset_id_list,
                  **application_setting_dict})
 
         @transaction.atomic

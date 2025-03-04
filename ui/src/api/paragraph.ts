@@ -29,6 +29,14 @@ const getParagraph: (
     loading
   )
 }
+const getAllParagraph: (
+  dataset_id: string,
+  document_id: string,
+  param: any,
+  loading?: Ref<boolean>
+) => Promise<Result<any>> = (dataset_id, document_id, param, loading) => {
+  return get(`${prefix}/${dataset_id}/document/${document_id}/paragraph`, param, loading)
+}
 
 /**
  * 删除段落
@@ -240,9 +248,9 @@ const batchGenerateRelated: (
   )
 }
 
-
 export default {
   getParagraph,
+  getAllParagraph,
   delParagraph,
   putParagraph,
   postParagraph,
