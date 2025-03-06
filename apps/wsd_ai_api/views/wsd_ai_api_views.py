@@ -18,7 +18,6 @@ class Dataset(APIView):
         @action(methods=['POST'], detail=False)
         @permission_classes((AllowAny,))
         def post(self, request: Request):
-            print(str(request.user.id))
             return result.success(WsdAiApiSerializers.DatasetCreateSerializer(data={**request.data, 'user_id': str(request.user.id)}).save_web(request.data))
 
     class ReEmbedding(APIView):

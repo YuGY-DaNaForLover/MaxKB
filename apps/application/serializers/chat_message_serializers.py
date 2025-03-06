@@ -285,8 +285,7 @@ class ChatMessageSerializer(serializers.Serializer):
         required=False, error_messages=ErrMessage.list(_("Audio")))
     child_node = serializers.DictField(required=False, allow_null=True,
                                        error_messages=ErrMessage.dict(_("Child Nodes")))
-    exclude_paragraph_id_list =  serializers.ListField(
-        required=False, error_messages=ErrMessage.list(_("paragraph_id_list")))
+    exclude_paragraph_id_list = serializers.ListField(required=False, allow_null=True)
 
     def is_valid_application_workflow(self, *, raise_exception=False):
         self.is_valid_intraday_access_num()

@@ -2,8 +2,8 @@
   <el-popover :width="300" placement="top">
     <div style="height: 320px; display: flex; flex-direction: column">
       <span class="mb-8"
-        >根据 <el-text type="primary" size="large" tag="b">{{ getTreeCount() }}</el-text
-        > 份文档提问</span
+        >根据
+        <el-text type="primary" size="large" tag="b">{{ getTreeCount() }}</el-text> 份文档提问</span
       >
       <el-input
         v-model="filterText"
@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import type { ElTree } from 'element-plus'
-import { watch, ref, type PropType, onMounted,  nextTick } from 'vue'
+import { watch, ref, type PropType, onMounted, nextTick } from 'vue'
 import useStore from '@/stores'
 import paragraphApi from '@/api/paragraph'
 import axios from 'axios'
@@ -141,6 +141,11 @@ const getTreeData = () => {
 
 onMounted(() => {
   getTreeData()
+  window.addEventListener('message', function (event) {
+    if (event.data.type === 'getFile') {
+      getTreeData()
+    }
+  })
 })
 </script>
 

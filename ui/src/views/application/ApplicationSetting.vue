@@ -61,7 +61,7 @@
                 </template>
                 <el-input
                   v-model="applicationForm.name"
-                  maxlength="64"
+                  maxlength="128"
                   :placeholder="$t('views.application.applicationForm.form.appName.placeholder')"
                   show-word-limit
                   @blur="applicationForm.name = applicationForm.name?.trim()"
@@ -443,7 +443,7 @@
                 </template>
                 <el-input v-model="applicationForm.ext.title" />
               </el-form-item>
-              <el-form-item label="主题标识">
+              <el-form-item label="主体标识">
                 <el-input
                   v-model="applicationForm.ext.subject_identifier"
                   placeholder="用于关联业务系统的主体，保存为智能体模版时不用填"
@@ -455,6 +455,15 @@
               <el-form-item label="回答是否可以被引入">
                 <el-switch
                   v-model="applicationForm.ext.is_checkbox"
+                  :active-value="true"
+                  :inactive-value="false"
+                ></el-switch>
+              </el-form-item>
+              <el-form-item
+                label="是否公共应用（公共应用在创建智能体时不会关联主体知识库，只会关联自带知识库）"
+              >
+                <el-switch
+                  v-model="applicationForm.ext.is_public"
                   :active-value="true"
                   :inactive-value="false"
                 ></el-switch>
@@ -621,7 +630,8 @@ const applicationForm = ref<ApplicationFormType>({
     title: '',
     subject_identifier: '',
     q_a_component: '',
-    is_checkbox: false
+    is_checkbox: false,
+    is_public: false
   },
   qa_texts: []
 })
@@ -798,12 +808,15 @@ function getDetail() {
         subject_identifier: '',
         q_a_component: '',
         title: '',
-        is_checkbox: false
+        is_checkbox: false,
+        is_public: false
       }
     }
     applicationForm.value.ext.subject_identifier = res.data.ext?.subject_identifier || ''
     applicationForm.value.ext.q_a_component = res.data.ext?.q_a_component || ''
     applicationForm.value.ext.title = res.data.ext?.title || ''
+    applicationForm.value.ext.is_checkbox = res.data.ext?.is_checkbox || false
+    applicationForm.value.ext.is_public = res.data.ext?.is_public || false
   })
 }
 

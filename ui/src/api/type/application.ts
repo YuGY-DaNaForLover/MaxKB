@@ -28,6 +28,7 @@ interface ApplicationFormType {
     subject_identifier: string
     q_a_component: string
     is_checkbox?: boolean
+    is_public?: boolean
   },
   qa_texts?: {
     subject_identifier: string

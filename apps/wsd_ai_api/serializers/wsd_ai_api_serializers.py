@@ -87,56 +87,74 @@ class WsdAiApiSerializers(serializers.Serializer):
                 application = mk_instance.application
                 function_lib_list = mk_instance.function_lib_list
                 application_ext = application.get('ext', {})
+                application_qa_text_list = application.get('qa_text_list', [])
                 application_qa_text_mapping_list = application.get(
                     'qa_text_mapping_list', [])
+                application_dataset_mapping_name_list = application.get(
+                    'application_dataset_mapping_name_list', [])
                 if QuerySet(Application).filter(name=f'{dsr_name}-{application_ext.get("title")}').exists():
-                    old_application_model = QuerySet(Application).filter(
-                        name=f'{dsr_name}-{application_ext.get("title")}').first()
-                    application_id = old_application_model.id
-                    application_dict = self.to_application(
-                        application, user_id, f'{dsr_name}-{application_ext.get("title")}', True)
-                    application_dict['dataset_id_list'] = dataset_id_list
-                    application_dict['ext'] = self.to_application_ext(
-                        application_ext={**application_ext, 'subject_identifier': app_subject_identifier}, application_id=application_id, to_dict=True)
-                    application_dict['qa_texts'] = self.to_application_qa_text(
-                        application_qa_text_mapping_list=application_qa_text_mapping_list, application_id=application_id, to_dict=True)
-                    ApplicationExtSerializer.Operate(
-                        data={'application_id': application_id, 'user_id': user_id}).edit(application_dict)
-                else:
-                    if len(function_lib_list) > 0:
-                        function_lib_id_list = [function_lib.get(
-                            'id') for function_lib in function_lib_list]
-                        exits_function_lib_id_list = [str(function_lib.id) for function_lib in
-                                                      QuerySet(FunctionLib).filter(id__in=function_lib_id_list)]
-                        # 获取到需要插入的函数
-                        function_lib_list = [function_lib for function_lib in function_lib_list if
-                                             not exits_function_lib_id_list.__contains__(function_lib.get('id'))]
-                    application_model = self.to_application(
-                        application, user_id, f'{dsr_name}-{application_ext.get("title")}')
-                    function_lib_model_list = [self.to_function_lib(
-                        f, user_id) for f in function_lib_list]
-                    application_model.save()
-                    # 插入认证信息
-                    ApplicationAccessToken(application_id=application_model.id,
-                                           access_token=hashlib.md5(str(uuid.uuid1()).encode()).hexdigest()[8:24]).save()
-                    QuerySet(FunctionLib).bulk_create(function_lib_model_list) if len(
-                        function_lib_model_list) > 0 else None
-                    # 关联知识库
+                    # old_application_model = QuerySet(Application).filter(
+                    #     name=f'{dsr_name}-{application_ext.get("title")}').first()
+                    # application_id = old_application_model.id
+                    # application_dict = self.to_application(
+                    #     application, user_id, f'{dsr_name}-{application_ext.get("title")}', True)
+                    # application_dict['dataset_id_list'] = dataset_id_list
+                    # application_dict['ext'] = self.to_application_ext(
+                    #     application_ext={**application_ext, 'subject_identifier': app_subject_identifier}, application_id=application_id, to_dict=True)
+                    # application_dict['qa_texts'] = self.to_application_qa_text(
+                    #     application_qa_text_mapping_list=application_qa_text_mapping_list, application_id=application_id, to_dict=True)
+                    # ApplicationExtSerializer.Operate(
+                    #     data={'application_id': application_id, 'user_id': user_id}).edit(application_dict)
+                    QuerySet(Application).filter(
+                        name=f'{dsr_name}-{application_ext.get("title")}').delete()
+                # else:
+                if len(function_lib_list) > 0:
+                    function_lib_id_list = [function_lib.get(
+                        'id') for function_lib in function_lib_list]
+                    exits_function_lib_id_list = [str(function_lib.id) for function_lib in
+                                                  QuerySet(FunctionLib).filter(id__in=function_lib_id_list)]
+                    # 获取到需要插入的函数
+                    function_lib_list = [function_lib for function_lib in function_lib_list if
+                                         not exits_function_lib_id_list.__contains__(function_lib.get('id'))]
+                application_model = self.to_application(
+                    application, user_id, f'{dsr_name}-{application_ext.get("title")}')
+                function_lib_model_list = [self.to_function_lib(
+                    f, user_id) for f in function_lib_list]
+                application_model.save()
+                # 插入认证信息
+                ApplicationAccessToken(application_id=application_model.id,
+                                       access_token=hashlib.md5(str(uuid.uuid1()).encode()).hexdigest()[8:24]).save()
+                QuerySet(FunctionLib).bulk_create(function_lib_model_list) if len(
+                    function_lib_model_list) > 0 else None
+                # 关联知识库
+                public_application_dataset_id_list = [QuerySet(DataSet).filter(
+                    name=application_dataset_mapping_name).id for application_dataset_mapping_name in application_dataset_mapping_name_list]
+                if len(public_application_dataset_id_list) > 0:
+                    public_application_dataset_mapping_list = []
+                    for dataset_id in public_application_dataset_id_list:
+                        public_application_dataset_mapping_list.append(self.to_application_dataset_mapping(
+                            application_model.id, dataset_id))
+                    QuerySet(ApplicationDatasetMapping).bulk_create(
+                        public_application_dataset_mapping_list)
+                if application_ext.get('is_public') is False:
                     application_dataset_mapping_list = []
                     for dataset_id in dataset_id_list:
                         application_dataset_mapping_list.append(self.to_application_dataset_mapping(
                             application_model.id, dataset_id))
                     QuerySet(ApplicationDatasetMapping).bulk_create(
                         application_dataset_mapping_list)
-                    # 插入应用扩展信息
-                    application_ext_model = self.to_application_ext(
-                        {**application_ext, 'subject_identifier': app_subject_identifier}, application_model.id)
-                    application_ext_model.save()
-                    # 插入应用问答文本映射信息
-                    application_qa_text_mapping_model_list = self.to_application_qa_text(
-                        application_qa_text_mapping_list, application_model.id)
-                    QuerySet(ApplicationQaTextMapping).bulk_create(application_qa_text_mapping_model_list) if len(
-                        application_qa_text_mapping_model_list) > 0 else None
+                # 插入应用扩展信息
+                application_ext_model = self.to_application_ext(
+                    {**application_ext, 'subject_identifier': app_subject_identifier}, application_model.id)
+                application_ext_model.save()
+                # 插入应用问答文本
+                application_qa_text_model_list = self.to_application_qa_text(
+                    application_qa_text_list)
+                # 插入应用问答文本映射信息
+                application_qa_text_mapping_model_list = self.to_application_qa_text_mapping(
+                    application_qa_text_mapping_list, application_model.id)
+                QuerySet(ApplicationQaTextMapping).bulk_create(application_qa_text_mapping_model_list) if len(
+                    application_qa_text_mapping_model_list) > 0 else None
 
             return True
 
@@ -260,7 +278,17 @@ class WsdAiApiSerializers(serializers.Serializer):
                 return ApplicationExt(id=uuid.uuid1(), application_id=application_id, **application_ext)
 
         @staticmethod
-        def to_application_qa_text(application_qa_text_mapping_list: list, application_id: str, to_dict=False):
+        def to_application_qa_text(self, application_qa_text_list: list):
+            application_qa_text_model_list = []
+            for application_qa_text in application_qa_text_list:
+                if (QuerySet(ApplicationQaText).filter(id=application_qa_text.get('id')).exists()):
+                    continue
+                application_qa_text_model_list.append(ApplicationQaText(id=application_qa_text.get(
+                    'id'), subject_identifier=application_qa_text.get('subject_identifier'), q_a_text=application_qa_text.get('q_a_text')))
+            return application_qa_text_model_list
+
+        @staticmethod
+        def to_application_qa_text_mapping(application_qa_text_mapping_list: list, application_id: str, to_dict=False):
             if to_dict:
                 application_qa_text_list = []
                 for application_qa_text_mapping in application_qa_text_mapping_list:
@@ -313,7 +341,8 @@ class WsdAiApiSerializers(serializers.Serializer):
                 self.is_valid(raise_exception=True)
             user_id = self.data.get('user_id')
             if QuerySet(DataSet).filter(user_id=user_id, name=instance.get('name')).exists():
-                raise AppApiException(500, _('Knowledge base name duplicate!'))
+                # raise AppApiException(500, _('Knowledge base name duplicate!'))
+                return {'dataset_id': str(QuerySet(DataSet).filter(user_id=user_id, name=instance.get('name')).first().id)}
             if not QuerySet(Model).filter(model_name="bge-m3").exists():
                 raise AppApiException(500, "还未配置bge-m3模型")
             embedding_mode_id = str(QuerySet(Model).filter(

@@ -24,6 +24,7 @@
     "@wecom/jssdk": "^2.1.0",
     "axios": "^0.28.0",
     "codemirror": "^6.0.1",
+    "core-js": "^3.41.0",
     "cropperjs": "^1.6.2",
     "echarts": "^5.5.0",
     "element-plus": "^2.9.1",

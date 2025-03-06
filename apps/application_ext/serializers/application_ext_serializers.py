@@ -8,11 +8,12 @@ from rest_framework import serializers, status
 from django.http import HttpResponse
 import hashlib
 
-from application.serializers.application_serializers import ApplicationSerializer, ApplicationSerializerModel
+from application.serializers.application_serializers import ApplicationSerializer, ApplicationSerializerModel, ApplicationDatasetMapping
 from function_lib.serializers.function_lib_serializer import FunctionLibModelSerializer
 from application_ext.models.application_ext import ApplicationExt
 from application_ext.models.application_ext import ApplicationQaText, ApplicationQaTextMapping
-from application.models.application import Application
+from application.models.application import Application, ApplicationDatasetMapping
+from dataset.models.data_set import DataSet
 from application.models.api_key_model import ApplicationAccessToken
 from function_lib.models.function import FunctionLib
 from application.serializers.application_serializers import MKInstance
@@ -32,6 +33,7 @@ class Ext(serializers.Serializer):
     q_a_component = serializers.CharField(
         required=False, allow_null=True, allow_blank=True)
     is_checkbox = serializers.BooleanField(required=False)
+    is_public = serializers.BooleanField(required=False)
 
 
 class QaText(serializers.Serializer):
@@ -146,7 +148,15 @@ class ApplicationExtSerializer(ApplicationSerializer):
                     application_id=application.id),
                 many=True
             ).data
-            mk_instance = MKInstance({**application_dict, 'ext': application_ext_dict, 'qa_text_mapping_list': application_qa_text_mapping_list},
+            application_qa_text_list = [QaText(QuerySet(ApplicationQaText).filter(id=mapping.get(
+                'application_qa_text_id')).first()).data for mapping in application_qa_text_mapping_list]
+            application_dataset_mapping_name_list = []
+            if QuerySet(ApplicationDatasetMapping).filter(application_id=application.id).exists():
+                application_dataset_mapping = QuerySet(
+                    ApplicationDatasetMapping).filter(application_id=application.id)
+                application_dataset_mapping_name_list = [
+                    dataset_mapping.dataset.name for dataset_mapping in application_dataset_mapping]
+            mk_instance = MKInstance({**application_dict, 'ext': application_ext_dict, 'qa_text_mapping_list': application_qa_text_mapping_list, 'qa_text_list': application_qa_text_list, 'application_dataset_mapping_name_list': application_dataset_mapping_name_list},
                                      [FunctionLibModelSerializer(function_lib).data for function_lib in
                                          function_lib_list], 'v1')
             application_pickle = pickle.dumps(mk_instance)
@@ -202,6 +212,9 @@ class ApplicationExtSerializer(ApplicationSerializer):
             application_ext = application.get('ext', {})
             application_qa_text_mapping_list = application.get(
                 'qa_text_mapping_list', [])
+            application_qa_text_list = application.get('qa_text_list', [])
+            application_dataset_mapping_name_list = application.get(
+                'application_dataset_mapping_name_list', [])
             function_lib_list = mk_instance.function_lib_list
             if len(function_lib_list) > 0:
                 function_lib_id_list = [function_lib.get(
@@ -224,11 +237,29 @@ class ApplicationExtSerializer(ApplicationSerializer):
             application_ext_model = self.to_application_ext(
                 application_ext, application_model.id)
             application_ext_model.save()
+            # 插入问答文本
+            if len(application_qa_text_list) > 0:
+                application_qa_text_model_list = self.to_application_qa_text(
+                    application_qa_text_list)
+                QuerySet(ApplicationQaText).bulk_create(application_qa_text_model_list) if len(
+                    application_qa_text_model_list) > 0 else None
             # 插入应用问答文本映射信息
-            application_qa_text_mapping_model_list = self.to_application_qa_text(
-                application_qa_text_mapping_list, application_model.id)
-            QuerySet(ApplicationQaTextMapping).bulk_create(application_qa_text_mapping_model_list) if len(
-                application_qa_text_mapping_model_list) > 0 else None
+            if len(application_qa_text_mapping_list) > 0:
+                application_qa_text_mapping_model_list = self.to_application_qa_text_mapping(
+                    application_qa_text_mapping_list, application_model.id)
+                QuerySet(ApplicationQaTextMapping).bulk_create(application_qa_text_mapping_model_list) if len(
+                    application_qa_text_mapping_model_list) > 0 else None
+            # 插入知识库关联
+            application_dataset_mapping_model_list = []
+            if len(application_dataset_mapping_name_list) > 0:
+                for application_dataset_mapping_name in application_dataset_mapping_name_list:
+                    if QuerySet(DataSet).filter(name=application_dataset_mapping_name).exists():
+                        dataset_id = QuerySet(DataSet).filter(
+                            name=application_dataset_mapping_name).first().id
+                        application_dataset_mapping_model_list.append(ApplicationDatasetMapping(
+                            id=uuid.uuid1(), application_id=application_model.id, dataset_id=dataset_id))
+                QuerySet(ApplicationDatasetMapping).bulk_create(application_dataset_mapping_model_list) if len(
+                    application_dataset_mapping_model_list) > 0 else None
             return True
 
         @staticmethod
@@ -236,7 +267,17 @@ class ApplicationExtSerializer(ApplicationSerializer):
             return ApplicationExt(id=uuid.uuid1(), application_id=application_id, **application_ext)
 
         @staticmethod
-        def to_application_qa_text(application_qa_text_mapping_list: list, application_id: str):
+        def to_application_qa_text(self, application_qa_text_list: list):
+            application_qa_text_model_list = []
+            for application_qa_text in application_qa_text_list:
+                if (QuerySet(ApplicationQaText).filter(id=application_qa_text.get('id')).exists()):
+                    continue
+                application_qa_text_model_list.append(ApplicationQaText(id=application_qa_text.get(
+                    'id'), subject_identifier=application_qa_text.get('subject_identifier'), q_a_text=application_qa_text.get('q_a_text')))
+            return application_qa_text_model_list
+
+        @staticmethod
+        def to_application_qa_text_mapping(application_qa_text_mapping_list: list, application_id: str):
             application_qa_text_mapping_model_list = []
             for application_qa_text_mapping in application_qa_text_mapping_list:
                 application_qa_text_id = application_qa_text_mapping.get(

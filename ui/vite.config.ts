@@ -47,7 +47,8 @@ export default defineConfig(({ mode }) => {
           'web.dom-collections.for-each',
           'esnext.global-this',
           'esnext.string.match-all'
-        ]
+        ],
+        modernPolyfills: ['es.string.replace-all']
       })
     ],
     server: {
