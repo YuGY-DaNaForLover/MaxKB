@@ -128,7 +128,7 @@ class WsdAiApiSerializers(serializers.Serializer):
                     function_lib_model_list) > 0 else None
                 # 关联知识库
                 public_application_dataset_id_list = [QuerySet(DataSet).filter(
-                    name=application_dataset_mapping_name).id for application_dataset_mapping_name in application_dataset_mapping_name_list]
+                    name=application_dataset_mapping_name).first().id for application_dataset_mapping_name in application_dataset_mapping_name_list]
                 if len(public_application_dataset_id_list) > 0:
                     public_application_dataset_mapping_list = []
                     for dataset_id in public_application_dataset_id_list:
@@ -136,7 +136,7 @@ class WsdAiApiSerializers(serializers.Serializer):
                             application_model.id, dataset_id))
                     QuerySet(ApplicationDatasetMapping).bulk_create(
                         public_application_dataset_mapping_list)
-                if application_ext.get('is_public') is False:
+                if not application_ext.get('is_public') or application_ext.get('is_public') is False:
                     application_dataset_mapping_list = []
                     for dataset_id in dataset_id_list:
                         application_dataset_mapping_list.append(self.to_application_dataset_mapping(
@@ -148,8 +148,11 @@ class WsdAiApiSerializers(serializers.Serializer):
                     {**application_ext, 'subject_identifier': app_subject_identifier}, application_model.id)
                 application_ext_model.save()
                 # 插入应用问答文本
-                application_qa_text_model_list = self.to_application_qa_text(
-                    application_qa_text_list)
+                if len(application_qa_text_list) > 0:
+                    application_qa_text_model_list = self.to_application_qa_text(
+                        application_qa_text_list)
+                    QuerySet(ApplicationQaText).bulk_create(application_qa_text_model_list) if len(
+                        application_qa_text_model_list) > 0 else None
                 # 插入应用问答文本映射信息
                 application_qa_text_mapping_model_list = self.to_application_qa_text_mapping(
                     application_qa_text_mapping_list, application_model.id)
