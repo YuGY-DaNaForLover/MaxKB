@@ -267,7 +267,7 @@ class ApplicationExtSerializer(ApplicationSerializer):
             return ApplicationExt(id=uuid.uuid1(), application_id=application_id, **application_ext)
 
         @staticmethod
-        def to_application_qa_text(self, application_qa_text_list: list):
+        def to_application_qa_text(application_qa_text_list: list):
             application_qa_text_model_list = []
             for application_qa_text in application_qa_text_list:
                 if (QuerySet(ApplicationQaText).filter(id=application_qa_text.get('id')).exists()):

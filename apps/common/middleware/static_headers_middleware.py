@@ -10,7 +10,7 @@ from django.utils.deprecation import MiddlewareMixin
 
 from common.cache_data.application_access_token_cache import get_application_access_token
 
-wsd_white_list = ['http://146.16.17.123:10010']
+wsd_white_list = ['http://146.16.17.123:10010', 'http://146.16.17.60:18081']
 
 
 class StaticHeadersMiddleware(MiddlewareMixin):

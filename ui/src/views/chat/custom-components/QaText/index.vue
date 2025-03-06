@@ -19,6 +19,7 @@
           ></el-button>
         </div>
       </el-card>
+      <el-empty v-if="qaTexts.length === 0" description="暂无常用问答" :image-size="100" />
     </el-scrollbar>
     <template #reference>
       <el-button type="primary" link class="new-chat-button mb-8">

@@ -208,7 +208,7 @@ def get_base_node_work_flow(work_flow):
 
 
 class ApplicationSerializer(serializers.Serializer):
-    name = serializers.CharField(required=True, max_length=64, min_length=1,
+    name = serializers.CharField(required=True, max_length=128, min_length=1,
                                  error_messages=ErrMessage.char(_("application name")))
     desc = serializers.CharField(required=False, allow_null=True, allow_blank=True,
                                  max_length=256, min_length=1,
@@ -476,7 +476,7 @@ class ApplicationSerializer(serializers.Serializer):
             return source_authentication_value.get('value') == authentication_value.get('value')
 
     class Edit(serializers.Serializer):
-        name = serializers.CharField(required=False, max_length=64, min_length=1,
+        name = serializers.CharField(required=False, max_length=128, min_length=1,
                                      error_messages=ErrMessage.char(_("Application Name")))
         desc = serializers.CharField(required=False, max_length=256, min_length=1, allow_null=True, allow_blank=True,
                                      error_messages=ErrMessage.char(_("Application Description")))
@@ -1054,17 +1054,17 @@ class ApplicationSerializer(serializers.Serializer):
             if 'work_flow' in instance:
                 # 当前用户可修改关联的知识库列表
                 application_dataset_id_list = [str(dataset_dict.get('id')) for dataset_dict in
-                                               self.list_dataset(with_valid=False)]
+                                            self.list_dataset(with_valid=False)]
                 self.update_reverse_search_node(instance.get('work_flow'), application_dataset_id_list)
                 # 找到语音配置相关
                 self.get_work_flow_model(instance)
 
             update_keys = ['name', 'desc', 'model_id', 'multiple_rounds_dialogue', 'prologue', 'status',
-                           'dataset_setting', 'model_setting', 'problem_optimization', 'dialogue_number',
-                           'stt_model_id', 'tts_model_id', 'tts_model_enable', 'stt_model_enable', 'tts_type',
-                           'tts_autoplay', 'stt_autosend', 'file_upload_enable', 'file_upload_setting',
-                           'api_key_is_active', 'icon', 'work_flow', 'model_params_setting', 'tts_model_params_setting',
-                           'problem_optimization_prompt', 'clean_time']
+                        'dataset_setting', 'model_setting', 'problem_optimization', 'dialogue_number',
+                        'stt_model_id', 'tts_model_id', 'tts_model_enable', 'stt_model_enable', 'tts_type',
+                        'tts_autoplay', 'stt_autosend', 'file_upload_enable', 'file_upload_setting',
+                        'api_key_is_active', 'icon', 'work_flow', 'model_params_setting', 'tts_model_params_setting',
+                        'problem_optimization_prompt', 'clean_time']
             for update_key in update_keys:
                 if update_key in instance and instance.get(update_key) is not None:
                     application.__setattr__(update_key, instance.get(update_key))
@@ -1074,12 +1074,12 @@ class ApplicationSerializer(serializers.Serializer):
                 dataset_id_list = instance.get('dataset_id_list')
                 # 当前用户可修改关联的知识库列表
                 application_dataset_id_list = [str(dataset_dict.get('id')) for dataset_dict in
-                                               self.list_dataset(with_valid=False)]
+                                            self.list_dataset(with_valid=False)]
                 for dataset_id in dataset_id_list:
                     if not application_dataset_id_list.__contains__(dataset_id):
                         message = lazy_format(_('Unknown knowledge base id {dataset_id}, unable to associate'),
-                                              dataset_id=dataset_id)
-                        raise AppApiException(500, message)
+                                            dataset_id=dataset_id)
+                        raise AppApiException(500, str(message))
 
                 self.save_application_mapping(application_dataset_id_list, dataset_id_list, application_id)
             if application.type == ApplicationTypeChoices.SIMPLE:

@@ -11,6 +11,9 @@ from django.utils.deprecation import MiddlewareMixin
 
 from common.cache_data.application_api_key_cache import get_application_api_key
 
+wsd_cross_domain_list = [
+    'http://146.16.17.60:18081', 'http://10.77.162.2:8089', 'http://192.168.31.8:8089']
+
 
 class CrossDomainMiddleware(MiddlewareMixin):
 
@@ -27,8 +30,10 @@ class CrossDomainMiddleware(MiddlewareMixin):
         origin = request.META.get('HTTP_ORIGIN')
         if auth is not None and str(auth).startswith("application-") and origin is not None:
             application_api_key = get_application_api_key(str(auth), True)
-            cross_domain_list = application_api_key.get('cross_domain_list', [])
-            allow_cross_domain = application_api_key.get('allow_cross_domain', False)
+            cross_domain_list = application_api_key.get(
+                'cross_domain_list', [])
+            allow_cross_domain = application_api_key.get(
+                'allow_cross_domain', False)
             if allow_cross_domain:
                 response['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,PUT'
                 response[
@@ -37,4 +42,8 @@ class CrossDomainMiddleware(MiddlewareMixin):
                     response['Access-Control-Allow-Origin'] = "*"
                 elif cross_domain_list.__contains__(origin):
                     response['Access-Control-Allow-Origin'] = origin
+        if origin is not None and wsd_cross_domain_list.__contains__(origin):
+            response['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,PUT'
+            response['Access-Control-Allow-Headers'] = "Origin,X-Requested-With,Content-Type,Accept,Authorization,token"
+            response['Access-Control-Allow-Origin'] = origin
         return response

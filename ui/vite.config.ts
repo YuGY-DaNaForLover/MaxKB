@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
           'es.array.filter',
           'es.promise',
           'es.promise.finally',
+          'es.promise.all-settled',
           'es/map',
           'es/set',
           'es.array.for-each',
@@ -48,7 +49,7 @@ export default defineConfig(({ mode }) => {
           'esnext.global-this',
           'esnext.string.match-all'
         ],
-        modernPolyfills: ['es.string.replace-all']
+        modernPolyfills: ['es.string.replace-all', 'es.promise.all-settled']
       })
     ],
     server: {

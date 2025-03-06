@@ -36,7 +36,11 @@
           </el-button>
         </div>
         <div class="chat-pc__left-tab">
-          <el-radio-group v-model="leftTabActive" style="margin-bottom: 20px; width: 100%">
+          <el-radio-group
+            v-model="leftTabActive"
+            style="margin-bottom: 20px; width: 100%"
+            @change="(value) => (value === 'historyLog' ? getChatLog(applicationDetail.id) : null)"
+          >
             <el-radio-button value="qaTexts" style="flex: 1">常用问答</el-radio-button>
             <el-radio-button value="historyLog" style="flex: 1">历史对话</el-radio-button>
           </el-radio-group>
@@ -64,6 +68,7 @@
                     ></el-button>
                   </div>
                 </el-card>
+                <el-empty v-if="qaTexts.length === 0" description="暂无常用问答" />
               </el-scrollbar>
             </div>
             <el-popover :width="300" :visible-arrow="false" placement="top" trigger="click">
@@ -366,7 +371,7 @@ const components: any = import.meta.glob('@/views/chat/custom-components/**/inde
   eager: true
 })
 const getCustomComponent = computed(() => {
-  if (applicationDetail.value.ext.q_a_component) {
+  if (applicationDetail.value.ext?.q_a_component) {
     const name = `/src/views/chat/custom-components/${applicationDetail.value.ext.q_a_component}/index.vue`
     return components[name].default
   } else return null
@@ -400,7 +405,7 @@ const customPropsObj = computed<{ [key: string]: any }>(() => {
   }
 })
 const customProps = computed(() => {
-  if (applicationDetail.value.ext.q_a_component) {
+  if (applicationDetail.value.ext?.q_a_component) {
     return customPropsObj.value[applicationDetail.value.ext.q_a_component]
   } else return {}
 })
