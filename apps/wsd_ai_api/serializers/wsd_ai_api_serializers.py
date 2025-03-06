@@ -102,8 +102,8 @@ class WsdAiApiSerializers(serializers.Serializer):
                         application_dict['dataset_id_list'] = dataset_id_list
                     public_application_dataset_id_list = [str(QuerySet(DataSet).filter(
                         name=application_dataset_mapping_name).first().id) for application_dataset_mapping_name in application_dataset_mapping_name_list]
-                    application_dict['dataset_id_list'] = [
-                        *application_dict['dataset_id_list'], *public_application_dataset_id_list]
+                    application_dict['dataset_id_list'] = application_dict.get('dataset_id_list', []) if application_dict.get(
+                        'dataset_id_list') is not None else [] + public_application_dataset_id_list
                     application_dict['ext'] = self.to_application_ext(
                         application_ext={**application_ext, 'subject_identifier': app_subject_identifier}, application_id=application_id, to_dict=True)
                     old_mapping_id_list = [old_mapping_list for old_mapping_list in QaTextMapping(instance=QuerySet(
