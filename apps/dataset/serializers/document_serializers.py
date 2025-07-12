@@ -19,16 +19,18 @@ from typing import List, Dict
 import openpyxl
 from celery_once import AlreadyQueued
 from django.core import validators
-from django.db import transaction
+from django.db import transaction, models
 from django.db.models import QuerySet, Count
 from django.db.models.functions import Substr, Reverse
 from django.http import HttpResponse
+from django.utils.translation import get_language
+from django.utils.translation import gettext_lazy as _, gettext, to_locale
 from drf_yasg import openapi
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from rest_framework import serializers
 from xlwt import Utils
 
-from common.db.search import native_search, native_page_search
+from common.db.search import native_search, native_page_search, get_dynamics_model
 from common.event import ListenerManagement
 from common.event.common import work_thread_pool
 from common.exception.app_exception import AppApiException
@@ -64,8 +66,6 @@ from embedding.task.embedding import embedding_by_document, delete_embedding_by_
     embedding_by_document_list
 from setting.models import Model
 from smartdoc.conf import PROJECT_DIR
-from django.utils.translation import gettext_lazy as _, gettext, to_locale
-from django.utils.translation import get_language
 
 parse_qa_handle_list = [XlsParseQAHandle(), CsvParseQAHandle(), XlsxParseQAHandle(), ZipParseQAHandle()]
 parse_table_handle_list = [CsvSplitTableHandle(), XlsSplitTableHandle(), XlsxSplitTableHandle()]
@@ -243,13 +243,16 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
                 self.is_valid(raise_exception=True)
             language = get_language()
             if self.data.get('type') == 'csv':
-                file = open(os.path.join(PROJECT_DIR, "apps", "dataset", 'template', f'csv_template_{to_locale(language)}.csv'), "rb")
+                file = open(
+                    os.path.join(PROJECT_DIR, "apps", "dataset", 'template', f'csv_template_{to_locale(language)}.csv'),
+                    "rb")
                 content = file.read()
                 file.close()
-                return HttpResponse(content, status=200, headers={'Content-Type': 'text/cxv',
+                return HttpResponse(content, status=200, headers={'Content-Type': 'text/csv',
                                                                   'Content-Disposition': 'attachment; filename="csv_template.csv"'})
             elif self.data.get('type') == 'excel':
-                file = open(os.path.join(PROJECT_DIR, "apps", "dataset", 'template', f'excel_template_{to_locale(language)}.xlsx'), "rb")
+                file = open(os.path.join(PROJECT_DIR, "apps", "dataset", 'template',
+                                         f'excel_template_{to_locale(language)}.xlsx'), "rb")
                 content = file.read()
                 file.close()
                 return HttpResponse(content, status=200, headers={'Content-Type': 'application/vnd.ms-excel',
@@ -261,7 +264,8 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
             language = get_language()
             if self.data.get('type') == 'csv':
                 file = open(
-                    os.path.join(PROJECT_DIR, "apps", "dataset", 'template', f'table_template_{to_locale(language)}.csv'),
+                    os.path.join(PROJECT_DIR, "apps", "dataset", 'template',
+                                 f'table_template_{to_locale(language)}.csv'),
                     "rb")
                 content = file.read()
                 file.close()
@@ -439,11 +443,17 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
                     else:
                         query_set = query_set.filter(status__iregex='^[2n]*$')
             order_by = self.data.get('order_by', '')
+            order_by_query_set = QuerySet(model=get_dynamics_model(
+                {'char_length': models.CharField(), 'paragraph_count': models.IntegerField(),
+                 "update_time": models.IntegerField(), 'create_time': models.DateTimeField()}))
             if order_by:
-                query_set = query_set.order_by(order_by)
+                order_by_query_set = order_by_query_set.order_by(order_by)
             else:
-                query_set = query_set.order_by('-create_time', 'id')
-            return query_set
+                order_by_query_set = order_by_query_set.order_by('-create_time', 'id')
+            return {
+                'document_custom_sql': query_set,
+                'order_by_query': order_by_query_set
+            }
 
         def list(self, with_valid=False):
             if with_valid:
@@ -651,6 +661,8 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
                         cell = worksheet.cell(row=row_idx + 1, column=col_idx + 1)
                         if isinstance(col, str):
                             col = re.sub(ILLEGAL_CHARACTERS_RE, '', col)
+                            if col.startswith(('=', '+', '-', '@')):
+                                col = '\ufeff' + col
                         cell.value = col
                     # 创建HttpResponse对象返回Excel文件
             return workbook
@@ -693,6 +705,8 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
 
         @staticmethod
         def reset_document_name(document_name):
+            if document_name is not None:
+                document_name = document_name.strip()[0:29]
             if document_name is None or not Utils.valid_sheet_name(document_name):
                 return "Sheet"
             return document_name.strip()
@@ -702,7 +716,10 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
                 self.is_valid(raise_exception=True)
             query_set = QuerySet(model=Document)
             query_set = query_set.filter(**{'id': self.data.get("document_id")})
-            return native_search(query_set, select_string=get_file_content(
+            return native_search({
+                'document_custom_sql': query_set,
+                'order_by_query': QuerySet(Document).order_by('-create_time', 'id')
+            }, select_string=get_file_content(
                 os.path.join(PROJECT_DIR, "apps", "dataset", 'sql', 'list_document.sql')), with_search_one=True)
 
         def edit(self, instance: Dict, with_valid=False):
@@ -1088,9 +1105,12 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
             if len(document_model_list) == 0:
                 return [], dataset_id
             query_set = query_set.filter(**{'id__in': [d.id for d in document_model_list]})
-            return native_search(query_set, select_string=get_file_content(
+            return native_search({
+                'document_custom_sql': query_set,
+                'order_by_query': QuerySet(Document).order_by('-create_time', 'id')
+            }, select_string=get_file_content(
                 os.path.join(PROJECT_DIR, "apps", "dataset", 'sql', 'list_document.sql')),
-                                 with_search_one=False), dataset_id
+                with_search_one=False), dataset_id
 
         @staticmethod
         def _batch_sync(document_id_list: List[str]):
@@ -1180,7 +1200,7 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
             if not QuerySet(Document).filter(id=document_id).exists():
                 raise AppApiException(500, _('document id not exist'))
 
-        def generate_related(self, model_id, prompt, with_valid=True):
+        def generate_related(self, model_id, prompt, state_list=None, with_valid=True):
             if with_valid:
                 self.is_valid(raise_exception=True)
             document_id = self.data.get('document_id')
@@ -1192,7 +1212,7 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
                                              State.PENDING)
             ListenerManagement.get_aggregation_document_status(document_id)()
             try:
-                generate_related_by_document_id.delay(document_id, model_id, prompt)
+                generate_related_by_document_id.delay(document_id, model_id, prompt, state_list)
             except AlreadyQueued as e:
                 raise AppApiException(500, _('The task is being executed, please do not send it again.'))
 
@@ -1205,17 +1225,23 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
             document_id_list = instance.get("document_id_list")
             model_id = instance.get("model_id")
             prompt = instance.get("prompt")
+            state_list = instance.get('state_list')
             ListenerManagement.update_status(QuerySet(Document).filter(id__in=document_id_list),
                                              TaskType.GENERATE_PROBLEM,
                                              State.PENDING)
-            ListenerManagement.update_status(QuerySet(Paragraph).filter(document_id__in=document_id_list),
+            ListenerManagement.update_status(QuerySet(Paragraph).annotate(
+                reversed_status=Reverse('status'),
+                task_type_status=Substr('reversed_status', TaskType.GENERATE_PROBLEM.value,
+                                        1),
+            ).filter(task_type_status__in=state_list, document_id__in=document_id_list)
+                                             .values('id'),
                                              TaskType.GENERATE_PROBLEM,
                                              State.PENDING)
             ListenerManagement.get_aggregation_document_status_by_query_set(
                 QuerySet(Document).filter(id__in=document_id_list))()
             try:
                 for document_id in document_id_list:
-                    generate_related_by_document_id.delay(document_id, model_id, prompt)
+                    generate_related_by_document_id.delay(document_id, model_id, prompt, state_list)
             except AlreadyQueued as e:
                 pass
 
@@ -1241,6 +1267,7 @@ def save_image(image_list):
         exist_image_list = [str(i.get('id')) for i in
                             QuerySet(Image).filter(id__in=[i.id for i in image_list]).values('id')]
         save_image_list = [image for image in image_list if not exist_image_list.__contains__(str(image.id))]
+        save_image_list = list({img.id: img for img in save_image_list}.values())
         if len(save_image_list) > 0:
             QuerySet(Image).bulk_create(save_image_list)
 

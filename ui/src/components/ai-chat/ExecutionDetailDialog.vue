@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    class="execution-details-dialog"
+    class="execution-details-dialog responsive-dialog"
     :title="$t('chat.executionDetails.title')"
     v-model="dialogVisible"
     destroy-on-close
@@ -59,13 +59,16 @@
                       <h5 class="p-8-12">
                         {{ $t('common.param.inputParam') }}
                       </h5>
+
                       <div class="p-8-12 border-t-dashed lighter">
                         <div class="mb-8">
                           <span class="color-secondary">
                             {{ $t('chat.paragraphSource.question') }}:</span
                           >
+
                           {{ item.question || '-' }}
                         </div>
+
                         <div v-for="(f, i) in item.global_fields" :key="i" class="mb-8">
                           <span class="color-secondary">{{ f.label }}:</span> {{ f.value }}
                         </div>
@@ -122,6 +125,28 @@
                             </template>
                           </el-space>
                         </div>
+                        <div v-if="item.other_list?.length > 0">
+                          <p class="mb-8 color-secondary">
+                            {{ $t('common.fileUpload.document') }}:
+                          </p>
+
+                          <el-space wrap>
+                            <template v-for="(f, i) in item.other_list" :key="i">
+                              <el-card
+                                shadow="never"
+                                style="--el-card-padding: 8px"
+                                class="file cursor"
+                              >
+                                <div class="flex align-center">
+                                  <img :src="getImgUrl(f && f?.name)" alt="" width="24" />
+                                  <div class="ml-4 ellipsis" :title="f && f?.name">
+                                    {{ f && f?.name }}
+                                  </div>
+                                </div>
+                              </el-card>
+                            </template>
+                          </el-space>
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -147,7 +172,11 @@
                             )"
                             :key="paragraphIndex"
                           >
-                            <ParagraphCard :data="paragraph" :index="paragraphIndex" />
+                            <ParagraphCard
+                              :data="paragraph"
+                              :content="paragraph.content"
+                              :index="paragraphIndex"
+                            />
                           </template>
                         </template>
                         <template v-else> -</template>
@@ -237,6 +266,7 @@
                           editorId="preview-only"
                           :modelValue="item.answer"
                           style="background: none"
+                          noImgZoomIn
                         />
                         <template v-else> -</template>
                       </div>
@@ -257,6 +287,7 @@
                             editorId="preview-only"
                             :modelValue="item.answer"
                             style="background: none"
+                            noImgZoomIn
                           />
                           <template v-else> -</template>
                         </el-scrollbar>
@@ -293,6 +324,7 @@
                               editorId="preview-only"
                               :modelValue="file_content"
                               style="background: none"
+                              noImgZoomIn
                             />
                             <template v-else> -</template>
                           </el-card>
@@ -344,6 +376,7 @@
                             editorId="preview-only"
                             :modelValue="file_content"
                             style="background: none"
+                            noImgZoomIn
                           />
                           <template v-else> -</template>
                         </el-card>
@@ -367,6 +400,7 @@
                               editorId="preview-only"
                               :modelValue="item.content"
                               style="background: none"
+                              noImgZoomIn
                             />
                           </div>
                         </div>
@@ -423,17 +457,11 @@
                             v-for="(paragraph, paragraphIndex) in item.document_list"
                             :key="paragraphIndex"
                           >
-                            <CardBox shadow="never" title="" class="cursor mb-8" :showIcon="false">
-                              <template #description>
-                                <el-scrollbar max-height="150">
-                                  <MdPreview
-                                    ref="editorRef"
-                                    editorId="preview-only"
-                                    :modelValue="paragraph"
-                                  />
-                                </el-scrollbar>
-                              </template>
-                            </CardBox>
+                            <ParagraphCard
+                              :data="paragraph.metadata"
+                              :content="paragraph.page_content"
+                              :index="paragraphIndex"
+                            />
                           </template>
                         </template>
                         <template v-else> -</template>
@@ -449,27 +477,12 @@
                             v-for="(paragraph, paragraphIndex) in item.result_list"
                             :key="paragraphIndex"
                           >
-                            <CardBox
-                              shadow="never"
-                              :title="`${$t('chat.executionDetails.paragraph')}${paragraphIndex + 1}`"
-                              class="paragraph-source-card cursor mb-8 paragraph-source-card-height"
-                              :showIcon="false"
-                            >
-                              <div class="active-button primary">
-                                {{ paragraph.metadata.relevance_score?.toFixed(3) }}
-                              </div>
-                              <template #description>
-                                <div class="mt-8">
-                                  <el-scrollbar height="150">
-                                    <MdPreview
-                                      ref="editorRef"
-                                      editorId="preview-only"
-                                      :modelValue="paragraph.page_content"
-                                    />
-                                  </el-scrollbar>
-                                </div>
-                              </template>
-                            </CardBox>
+                            <ParagraphCard
+                              :data="paragraph.metadata"
+                              :content="paragraph.page_content"
+                              :index="paragraphIndex"
+                              :score="paragraph.metadata?.relevance_score"
+                            />
                           </template>
                         </template>
                         <template v-else> -</template>
@@ -587,6 +600,7 @@
                           editorId="preview-only"
                           :modelValue="item.answer"
                           style="background: none"
+                          noImgZoomIn
                         />
                         <template v-else> -</template>
                       </div>
@@ -617,8 +631,67 @@
                           editorId="preview-only"
                           :modelValue="item.answer"
                           style="background: none"
+                          noImgZoomIn
                         />
                         <template v-else> -</template>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- 变量赋值 -->
+                  <template v-if="item.type === WorkflowType.VariableAssignNode">
+                    <div class="card-never border-r-4">
+                      <h5 class="p-8-12">
+                        {{ $t('common.param.inputParam') }}
+                      </h5>
+                      <div class="p-8-12 border-t-dashed lighter">
+                        <div v-for="(f, i) in item.result_list" :key="i" class="mb-8">
+                          <span class="color-secondary">{{ f.name }}:</span> {{ f.input_value }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-never border-r-4">
+                      <h5 class="p-8-12">
+                        {{ $t('common.param.outputParam') }}
+                      </h5>
+                      <div class="p-8-12 border-t-dashed lighter">
+                        <div v-for="(f, i) in item.result_list" :key="i" class="mb-8">
+                          <span class="color-secondary">{{ f.name }}:</span> {{ f.output_value }}
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- MCP 节点 -->
+                  <template v-if="item.type === WorkflowType.McpNode">
+                    <div class="card-never border-r-4">
+                      <h5 class="p-8-12">
+                        {{ $t('views.applicationWorkflow.nodes.mcpNode.tool') }}
+                      </h5>
+                      <div class="p-8-12 border-t-dashed lighter">
+                        <div class="mb-8">
+                          <span class="color-secondary"> {{ $t('views.applicationWorkflow.nodes.mcpNode.tool') }}: </span> {{ item.mcp_tool }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-never border-r-4">
+                      <h5 class="p-8-12">
+                        {{ $t('views.applicationWorkflow.nodes.mcpNode.toolParam') }}
+                      </h5>
+                      <div class="p-8-12 border-t-dashed lighter">
+                        <div v-for="(value, name) in item.tool_params" :key="name" class="mb-8">
+                          <span class="color-secondary">{{ name }}:</span> {{ value }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-never border-r-4">
+                      <h5 class="p-8-12">
+                        {{ $t('common.param.outputParam') }}
+                      </h5>
+                      <div class="p-8-12 border-t-dashed lighter">
+                        <div v-for="(f, i) in item.result" :key="i" class="mb-8">
+                          <span class="color-secondary">result:</span> {{ f }}
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -669,14 +742,9 @@ defineExpose({ open })
 </script>
 <style lang="scss">
 .execution-details-dialog {
-  padding: 0;
 
   .el-dialog__header {
-    padding: 24px 24px 0 24px;
-  }
-
-  .el-dialog__body {
-    padding: 8px !important;
+    padding-bottom: 16px;
   }
 
   .execution-details {
@@ -688,9 +756,5 @@ defineExpose({ open })
   }
 }
 
-@media only screen and (max-width: 768px) {
-  .execution-details-dialog {
-    width: 90% !important;
-  }
-}
+
 </style>

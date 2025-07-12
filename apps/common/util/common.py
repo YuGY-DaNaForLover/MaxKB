@@ -10,6 +10,8 @@ import hashlib
 import importlib
 import io
 import mimetypes
+import pickle
+import random
 import re
 import shutil
 from functools import reduce
@@ -22,6 +24,51 @@ from pydub import AudioSegment
 
 from ..exception.app_exception import AppApiException
 from ..models.db_model_manage import DBModelManage
+
+safe_builtins = {
+    'MKInstance'
+}
+
+ALLOWED_CLASSES = {
+    ("builtins", "dict"),
+    ('uuid', 'UUID'),
+    ("application.serializers.application_serializers", "MKInstance"),
+    ("function_lib.serializers.function_lib_serializer", "FlibInstance")
+}
+
+
+class RestrictedUnpickler(pickle.Unpickler):
+
+    def find_class(self, module, name):
+        if (module, name) in ALLOWED_CLASSES:
+            return super().find_class(module, name)
+        raise pickle.UnpicklingError("global '%s.%s' is forbidden" %
+                                     (module, name))
+
+
+def restricted_loads(s):
+    """Helper function analogous to pickle.loads()."""
+    return RestrictedUnpickler(io.BytesIO(s)).load()
+
+
+def encryption(message: str):
+    """
+        加密敏感字段数据  加密方式是 如果密码是 1234567890  那么给前端则是 123******890
+    :param message:
+    :return:
+    """
+    max_pre_len = 8
+    max_post_len = 4
+    message_len = len(message)
+    pre_len = int(message_len / 5 * 2)
+    post_len = int(message_len / 5 * 1)
+    pre_str = "".join([message[index] for index in
+                       range(0, max_pre_len if pre_len > max_pre_len else 1 if pre_len <= 0 else int(pre_len))])
+    end_str = "".join(
+        [message[index] for index in
+         range(message_len - (int(post_len) if pre_len < max_post_len else max_post_len), message_len)])
+    content = "***************"
+    return pre_str + content + end_str
 
 
 def sub_array(array: List, item_num=10):
@@ -251,3 +298,14 @@ def markdown_to_plain_text(md: str) -> str:
     # 去除首尾空格
     text = text.strip()
     return text
+
+
+SAFE_CHAR_SET = (
+        [chr(i) for i in range(65, 91) if chr(i) not in {'I', 'O'}] +  # 大写字母 A-H, J-N, P-Z
+        [chr(i) for i in range(97, 123) if chr(i) not in {'i', 'l', 'o'}] +  # 小写字母 a-h, j-n, p-z
+        [str(i) for i in range(10) if str(i) not in {'0', '1', '7'}]  # 数字 2-6, 8-9
+)
+
+
+def get_random_chars(number=4):
+    return ''.join(random.choices(SAFE_CHAR_SET, k=number))

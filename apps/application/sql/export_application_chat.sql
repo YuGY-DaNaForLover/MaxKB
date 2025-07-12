@@ -10,7 +10,8 @@ SELECT
     application_chat_record_temp."index" as "index",
     application_chat_record_temp.improve_paragraph_list  as improve_paragraph_list,
     application_chat_record_temp.vote_status as vote_status,
-    application_chat_record_temp.create_time as create_time
+    application_chat_record_temp.create_time as create_time,
+    	to_json(application_chat.asker) as asker
 FROM
 	application_chat application_chat
 	LEFT JOIN (
@@ -22,6 +23,8 @@ FROM
 		chat_id
 	FROM
 		application_chat_record
+	WHERE chat_id IN (
+	  SELECT id FROM application_chat ${inner_queryset})
 	GROUP BY
 		application_chat_record.chat_id
 	) chat_record_temp ON application_chat."id" = chat_record_temp.chat_id
@@ -35,3 +38,4 @@ FROM
 		FROM
 		application_chat_record application_chat_record
 	) application_chat_record_temp ON application_chat_record_temp.chat_id = application_chat."id"
+	${default_queryset}

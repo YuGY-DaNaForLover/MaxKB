@@ -1,5 +1,7 @@
 <template>
-  <div>
+
+  <div class="operation-button-container">
+
     <LogOperationButton
       v-if="type === 'log'"
       v-bind:data="chatRecord"
@@ -28,20 +30,20 @@
         </el-button>
       </div>
     </div>
-    <div v-if="chatRecord.write_ed && 500 != chatRecord.status" class="flex-between">
-      <ChatOperationButton
-        :tts="application.tts_model_enable"
-        :tts_type="application.tts_type"
-        :tts_autoplay="application.tts_autoplay"
-        :data="chatRecord"
-        :type="type"
-        :applicationId="application.id"
-        :chatId="chatRecord.chat_id"
-        :chat_loading="loading"
-        :is_checkbox="application.ext?.is_checkbox || false"
-        @regeneration="regenerationChart(chatRecord)"
-      />
-    </div>
+
+    <ChatOperationButton
+      v-show="chatRecord.write_ed && 500 != chatRecord.status"
+      :tts="application.tts_model_enable"
+      :tts_type="application.tts_type"
+      :tts_autoplay="application.tts_autoplay"
+      :data="chatRecord"
+      :type="type"
+      :applicationId="application.id"
+      :chatId="chatRecord.chat_id"
+      :chat_loading="loading"
+      :is_checkbox="application.ext?.is_checkbox || false"
+      @regeneration="regenerationChart(chatRecord)"
+    />
   </div>
 </template>
 <script setup lang="ts">

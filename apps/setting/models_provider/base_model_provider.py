@@ -11,10 +11,12 @@ from enum import Enum
 from functools import reduce
 from typing import Dict, Iterator, Type, List
 
-from pydantic.v1 import BaseModel
+from pydantic import BaseModel
 
 from common.exception.app_exception import AppApiException
 from django.utils.translation import gettext_lazy as _
+
+from common.util.common import encryption
 
 
 class DownModelChunkStatus(Enum):
@@ -104,7 +106,10 @@ class MaxKBBaseModel(ABC):
         optional_params = {}
         for key, value in model_kwargs.items():
             if key not in ['model_id', 'use_local', 'streaming', 'show_ref_label']:
-                optional_params[key] = value
+                if key == 'extra_body' and isinstance(value, dict):
+                    optional_params = {**optional_params, **value}
+                else:
+                    optional_params[key] = value
         return optional_params
 
 
@@ -137,18 +142,7 @@ class BaseModelCredential(ABC):
         :param message:
         :return:
         """
-        max_pre_len = 8
-        max_post_len = 4
-        message_len = len(message)
-        pre_len = int(message_len / 5 * 2)
-        post_len = int(message_len / 5 * 1)
-        pre_str = "".join([message[index] for index in
-                           range(0, max_pre_len if pre_len > max_pre_len else 1 if pre_len <= 0 else int(pre_len))])
-        end_str = "".join(
-            [message[index] for index in
-             range(message_len - (int(post_len) if pre_len < max_post_len else max_post_len), message_len)])
-        content = "***************"
-        return pre_str + content + end_str
+        return encryption(message)
 
 
 class ModelTypeConst(Enum):

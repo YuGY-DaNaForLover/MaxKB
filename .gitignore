@@ -187,3 +187,4 @@ apps/setting/models_provider/impl/*/icon/
 
 # Claude Code configuration
 .claude/
+tmp/

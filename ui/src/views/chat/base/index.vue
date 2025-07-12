@@ -29,9 +29,19 @@
         type="ai-chat"
         :available="applicationAvailable"
         :appId="applicationDetail?.id"
-      ></AiChat>
+        :record="recordList"
+        :chatId="currentChatId"
+        @refresh="refresh"
+      >
+        <template #operateBefore>
+          <div>
+            <el-button type="primary" link class="new-chat-button mb-8" @click="newChat">
+              <el-icon><Plus /></el-icon><span class="ml-4">{{ $t('chat.createChat') }}</span>
+            </el-button>
+          </div>
+        </template>
+      </AiChat>
     </div>
-    <div class="chat__footer"></div>
   </div>
 </template>
 <script setup lang="ts">
@@ -57,6 +67,16 @@ const applicationDetail = computed({
   },
   set: (v) => {}
 })
+const recordList = ref([])
+const currentChatId = ref('')
+
+function newChat() {
+  currentChatId.value = 'new'
+  recordList.value = []
+}
+function refresh(id: string) {
+  currentChatId.value = id
+}
 </script>
 <style lang="scss">
 .chat {
@@ -79,25 +99,6 @@ const applicationDetail = computed({
     overflow: hidden;
   }
 
-  &__footer {
-    background: #f3f7f9;
-    height: 80px;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    box-sizing: border-box;
-    border-radius: 8px !important;
-    &:before {
-      background: linear-gradient(0deg, #f3f7f9 0%, rgba(243, 247, 249, 0) 100%);
-      content: '';
-      position: absolute;
-      width: 100%;
-      top: -16px;
-      left: 0;
-      height: 16px;
-    }
-  }
   .chat-width {
     // max-width: 80%;
     margin: 0 auto;

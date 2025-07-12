@@ -28,6 +28,9 @@ mime_types = {"html": "text/html", "htm": "text/html", "shtml": "text/html", "cs
               "woff2": "font/woff2", "jar": "application/java-archive", "war": "application/java-archive",
               "ear": "application/java-archive", "json": "application/json", "hqx": "application/mac-binhex40",
               "doc": "application/msword", "pdf": "application/pdf", "ps": "application/postscript",
+              "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
               "eps": "application/postscript", "ai": "application/postscript", "rtf": "application/rtf",
               "m3u8": "application/vnd.apple.mpegurl", "kml": "application/vnd.google-earth.kml+xml",
               "kmz": "application/vnd.google-earth.kmz", "xls": "application/vnd.ms-excel",
@@ -57,12 +60,14 @@ mime_types = {"html": "text/html", "htm": "text/html", "shtml": "text/html", "cs
 
 class FileSerializer(serializers.Serializer):
     file = UploadedFileField(required=True, error_messages=ErrMessage.image(_('file')))
-    meta = serializers.JSONField(required=False)
+    meta = serializers.JSONField(required=False, allow_null=True)
 
     def upload(self, with_valid=True):
         if with_valid:
             self.is_valid(raise_exception=True)
-        meta = self.data.get('meta')
+        meta = self.data.get('meta', None)
+        if not meta:
+            meta = {'debug': True}
         file_id = meta.get('file_id', uuid.uuid1())
         file = File(id=file_id, file_name=self.data.get('file').name, meta=meta)
         file.save(self.data.get('file').read())
@@ -85,4 +90,4 @@ class FileSerializer(serializers.Serializer):
                                                                           'Content-Disposition': 'attachment; filename="{}"'.format(
                                                                               file.file_name)})
             return HttpResponse(file.get_byte(), status=200,
-                                headers={'Content-Type': mime_types.get(file.file_name.split(".")[-1], 'text/plain')})
+                                headers={'Content-Type': mime_types.get(file_type, 'text/plain')})

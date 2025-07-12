@@ -36,6 +36,12 @@
               :placeholder="$t('views.system.authentication.oidc.userInfoEndpointPlaceholder')"
             />
           </el-form-item>
+          <el-form-item label="Scope" prop="config_data.scope">
+            <el-input v-model="form.config_data.scope" placeholder="openid+profile+email " />
+          </el-form-item>
+          <el-form-item label="State" prop="config_data.state">
+            <el-input v-model="form.config_data.state" placeholder="" />
+          </el-form-item>
           <el-form-item
             :label="$t('views.system.authentication.oidc.clientId')"
             prop="config_data.clientId"
@@ -53,6 +59,15 @@
               v-model="form.config_data.clientSecret"
               :placeholder="$t('views.system.authentication.oidc.clientSecretPlaceholder')"
               show-password
+            />
+          </el-form-item>
+          <el-form-item
+            :label="$t('views.system.authentication.oauth2.filedMapping')"
+            prop="config_data.fieldMapping"
+          >
+            <el-input
+              v-model="form.config_data.fieldMapping"
+              :placeholder="$t('views.system.authentication.oauth2.filedMappingPlaceholder')"
             />
           </el-form-item>
           <el-form-item
@@ -94,8 +109,11 @@ const form = ref<any>({
     authEndpoint: '',
     tokenEndpoint: '',
     userInfoEndpoint: '',
+    scope: '',
+    state: '',
     clientId: '',
     clientSecret: '',
+    fieldMapping: '{"username": "preferred_username", "email": "email"}',
     redirectUrl: ''
   },
   is_active: true
@@ -127,6 +145,13 @@ const rules = reactive<FormRules<any>>({
       trigger: 'blur'
     }
   ],
+  'config_data.scope': [
+    {
+      required: true,
+      message: t('views.system.authentication.oidc.scopePlaceholder'),
+      trigger: 'blur'
+    }
+  ],
   'config_data.clientId': [
     {
       required: true,
@@ -138,6 +163,13 @@ const rules = reactive<FormRules<any>>({
     {
       required: true,
       message: t('views.system.authentication.oidc.clientSecretPlaceholder'),
+      trigger: 'blur'
+    }
+  ],
+  'config_data.fieldMapping': [
+    {
+      required: true,
+      message: t('views.system.authentication.oauth2.filedMappingPlaceholder'),
       trigger: 'blur'
     }
   ],
@@ -172,6 +204,12 @@ function getDetail() {
   authApi.getAuthSetting(form.value.auth_type, loading).then((res: any) => {
     if (res.data && JSON.stringify(res.data) !== '{}') {
       form.value = res.data
+      if (
+        form.value.config_data.fieldMapping === '' ||
+        form.value.config_data.fieldMapping === undefined
+      ) {
+        form.value.config_data.fieldMapping = '{"username": "preferred_username", "email": "email"}'
+      }
     }
   })
 }

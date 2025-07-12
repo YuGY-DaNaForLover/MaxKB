@@ -1,5 +1,6 @@
 export default {
   node: '节点',
+  nodeName: '节点名称',
   baseComponent: '基础组件',
   nodeSetting: '节点设置',
   workflow: '工作流',
@@ -20,6 +21,8 @@ export default {
     latestRelease: '最近发布',
     copyParam: '复制参数',
     debug: '调试',
+    exit: '直接退出',
+    exitSave: '保存并退出'
   },
   tip: {
     publicSuccess: '发布成功',
@@ -33,7 +36,8 @@ export default {
     repeatedNodeError: '节点名称已存在！',
     cannotCopy: '不能被复制',
     copyError: '已复制节点',
-    paramErrorMessage: '参数已存在: '
+    paramErrorMessage: '参数已存在: ',
+    saveMessage: '当前的更改尚未保存，是否保存后退出?'
   },
   delete: {
     confirmTitle: '确定删除该节点？',
@@ -48,12 +52,13 @@ export default {
     beautify: '一键美化'
   },
   variable: {
+    label: '变量',
     global: '全局变量',
     Referencing: '引用变量',
     ReferencingRequired: '引用变量必填',
     ReferencingError: '引用变量错误',
     NoReferencing: '不存在的引用变量',
-    fieldMessage: '请选择变量'
+    placeholder: '请选择变量'
   },
   condition: {
     title: '执行条件',
@@ -83,12 +88,11 @@ export default {
     baseNode: {
       label: '基本信息',
       appName: {
-        label: '应用名称',
-    
+        label: '应用名称'
       },
       appDescription: {
-        label: '应用描述',
-       },
+        label: '应用描述'
+      },
       fileUpload: {
         label: '文件上传',
         tooltip: '开启后，问答页面会显示上传文件的按钮。'
@@ -101,8 +105,10 @@ export default {
           label: '上传的文件类型',
           documentText: '需要使用“文档内容提取”节点解析文档内容',
           imageText: '需要使用“视觉模型”节点解析图片内容',
-          audioText: '需要使用“语音转文本”节点解析音频内容'
-        }
+          audioText: '需要使用“语音转文本”节点解析音频内容',
+          otherText: '需要自行解析该类型文件'
+        },
+        
       }
     },
     aiChatNode: {
@@ -115,7 +121,7 @@ export default {
                   如果你想让用户看到该节点的输出内容，请打开开关。`
       },
       defaultPrompt: '已知信息',
-      think: '思考过程',
+      think: '思考过程'
     },
     searchDatasetNode: {
       label: '知识库检索',
@@ -211,6 +217,22 @@ export default {
         requiredMessage: '请选择图片'
       }
     },
+    variableAssignNode: {
+      label: '变量赋值',
+      text: '更新全局变量的值',
+      assign: '赋值'
+    },
+    mcpNode: {
+      label: 'MCP 调用',
+      text: '通过SSE/Streamable HTTP方式执行MCP服务中的工具',
+      getToolsSuccess: '获取工具成功',
+      getTool: '获取工具',
+      tool: '工具',
+      toolParam: '工具参数',
+      mcpServerTip: '请输入JSON格式的MCP服务器配置',
+      mcpToolTip: '请选择工具',
+      configLabel: 'MCP Server Config (仅支持SSE/Streamable HTTP调用方式)'
+    },
     imageGenerateNode: {
       label: '图片生成',
       text: '根据提供的文本内容生成图片',
@@ -244,7 +266,7 @@ export default {
       label: '文本转语音',
       text: '将文本通过语音合成模型转换为音频',
       tts_model: {
-        label: '语音识别模型'
+        label: '语音合成模型'
       },
       content: {
         label: '选择文本内容'
@@ -272,7 +294,9 @@ export default {
     len_ge: '长度大于等于',
     len_gt: '长度大于',
     len_le: '长度小于等于',
-    len_lt: '长度小于'
+    len_lt: '长度小于',
+    is_true: '为真',
+    is_not_true: '不为真'
   },
   FileUploadSetting: {}
 }

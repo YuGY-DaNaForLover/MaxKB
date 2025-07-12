@@ -4,6 +4,7 @@
     v-model="dialogVisible"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
+    width="550"
   >
     <el-form label-position="top" ref="displayFormRef" :model="form">
       <el-form-item>
@@ -99,4 +100,4 @@ const submit = async (formEl: FormInstance | undefined) => {
 
 defineExpose({ open })
 </script>
-<style lang="scss" scope></style>
+<style lang="scss" scoped></style>

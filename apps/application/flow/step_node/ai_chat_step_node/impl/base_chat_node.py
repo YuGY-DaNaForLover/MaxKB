@@ -6,14 +6,19 @@
     @date：2024/6/4 14:30
     @desc:
 """
+import asyncio
+import json
 import re
 import time
 from functools import reduce
+from types import AsyncGeneratorType
 from typing import List, Dict
 
 from django.db.models import QuerySet
 from langchain.schema import HumanMessage, SystemMessage
-from langchain_core.messages import BaseMessage, AIMessage
+from langchain_core.messages import BaseMessage, AIMessage, AIMessageChunk, ToolMessage
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
 
 from application.flow.i_step_node import NodeResult, INode
 from application.flow.step_node.ai_chat_step_node.i_chat_node import IChatNode
@@ -21,6 +26,19 @@ from application.flow.tools import Reasoning
 from setting.models import Model
 from setting.models_provider import get_model_credential
 from setting.models_provider.tools import get_model_instance_by_model_user_id
+
+tool_message_template = """
+<details>
+    <summary>
+        <strong>Called MCP Tool: <em>%s</em></strong>
+    </summary>
+
+```json
+%s
+```
+</details>
+
+"""
 
 
 def _write_context(node_variable: Dict, workflow_variable: Dict, node: INode, workflow, answer: str,
@@ -56,6 +74,7 @@ def write_context_stream(node_variable: Dict, workflow_variable: Dict, node: INo
     reasoning = Reasoning(model_setting.get('reasoning_content_start', '<think>'),
                           model_setting.get('reasoning_content_end', '</think>'))
     response_reasoning_content = False
+
     for chunk in response:
         reasoning_chunk = reasoning.get_reasoning_content(chunk)
         content_chunk = reasoning_chunk.get('content')
@@ -82,6 +101,39 @@ def write_context_stream(node_variable: Dict, workflow_variable: Dict, node: INo
            'reasoning_content': reasoning_content_chunk if model_setting.get('reasoning_content_enable',
                                                                              False) else ''}
     _write_context(node_variable, workflow_variable, node, workflow, answer, reasoning_content)
+
+
+async def _yield_mcp_response(chat_model, message_list, mcp_servers):
+    async with MultiServerMCPClient(json.loads(mcp_servers)) as client:
+        agent = create_react_agent(chat_model, client.get_tools())
+        response = agent.astream({"messages": message_list}, stream_mode='messages')
+        async for chunk in response:
+            if isinstance(chunk[0], ToolMessage):
+                content = tool_message_template % (chunk[0].name, chunk[0].content)
+                chunk[0].content = content
+                yield chunk[0]
+            if isinstance(chunk[0], AIMessageChunk):
+                yield chunk[0]
+
+
+def mcp_response_generator(chat_model, message_list, mcp_servers):
+    loop = asyncio.new_event_loop()
+    try:
+        async_gen = _yield_mcp_response(chat_model, message_list, mcp_servers)
+        while True:
+            try:
+                chunk = loop.run_until_complete(anext_async(async_gen))
+                yield chunk
+            except StopAsyncIteration:
+                break
+    except Exception as e:
+        print(f'exception: {e}')
+    finally:
+        loop.close()
+
+
+async def anext_async(agen):
+    return await agen.__anext__()
 
 
 def write_context(node_variable: Dict, workflow_variable: Dict, node: INode, workflow):
@@ -136,12 +188,15 @@ class BaseChatNode(IChatNode):
         self.context['answer'] = details.get('answer')
         self.context['question'] = details.get('question')
         self.context['reasoning_content'] = details.get('reasoning_content')
-        self.answer_text = details.get('answer')
+        if self.node_params.get('is_result', False):
+            self.answer_text = details.get('answer')
 
     def execute(self, model_id, system, prompt, dialogue_number, history_chat_record, stream, chat_id, chat_record_id,
                 model_params_setting=None,
                 dialogue_type=None,
                 model_setting=None,
+                mcp_enable=False,
+                mcp_servers=None,
                 **kwargs) -> NodeResult:
         if dialogue_type is None:
             dialogue_type = 'WORKFLOW'
@@ -163,6 +218,14 @@ class BaseChatNode(IChatNode):
         self.context['system'] = system
         message_list = self.generate_message_list(system, prompt, history_message)
         self.context['message_list'] = message_list
+
+        if mcp_enable and mcp_servers is not None and '"stdio"' not in mcp_servers:
+            r = mcp_response_generator(chat_model, message_list, mcp_servers)
+            return NodeResult(
+                {'result': r, 'chat_model': chat_model, 'message_list': message_list,
+                 'history_message': history_message, 'question': question.content}, {},
+                _write_context=write_context_stream)
+
         if stream:
             r = chat_model.stream(message_list)
             return NodeResult({'result': r, 'chat_model': chat_model, 'message_list': message_list,

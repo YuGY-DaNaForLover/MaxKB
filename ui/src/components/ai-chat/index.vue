@@ -1,56 +1,99 @@
 <template>
-  <div ref="aiChatRef" class="ai-chat" :class="type == 'log' ? 'chart-log' : ''">
-    <UserForm
-      v-model:api_form_data="api_form_data"
-      v-model:form_data="form_data"
-      :application="applicationDetails"
-      :type="type"
-      ref="userFormRef"
-    ></UserForm>
-    <el-scrollbar ref="scrollDiv" @scroll="handleScrollTop">
-      <div ref="dialogScrollbar" class="ai-chat__content p-24">
-        <PrologueContent
-          :type="type"
-          :application="applicationDetails"
-          :available="available"
-          :send-message="sendMessage"
-        ></PrologueContent>
-
-        <template v-for="(item, index) in chatList" :key="index">
-          <!-- 问题 -->
-          <QuestionContent
-            :type="type"
-            :application="applicationDetails"
-            :chat-record="item"
-          ></QuestionContent>
-          <!-- 回答 -->
-          <AnswerContent
-            :application="applicationDetails"
-            :loading="loading"
-            v-model:chat-record="chatList[index]"
-            :type="type"
-            :send-message="sendMessage"
-            :chat-management="ChatManagement"
-          ></AnswerContent>
-        </template>
-      </div>
-    </el-scrollbar>
-
-    <ChatInputOperate
-      :app-id="appId"
-      :application-details="applicationDetails"
-      :is-mobile="isMobile"
-      :type="type"
-      :send-message="sendMessage"
-      :open-chat-id="openChatId"
-      :chat-management="ChatManagement"
-      v-model:chat-id="chartOpenId"
-      v-model:loading="loading"
-      v-if="type !== 'log'"
+  <div
+    ref="aiChatRef"
+    class="ai-chat"
+    :class="type"
+    :style="{
+      height: firsUserInput ? '100%' : undefined,
+      paddingBottom: applicationDetails.disclaimer ? '20px' : 0
+    }"
+  >
+    <div
+      v-show="showUserInputContent"
+      :class="firsUserInput ? 'firstUserInput' : 'popperUserInput'"
     >
-      <template #operateBefore> <slot name="operateBefore" /> </template>
-    </ChatInputOperate>
-    <Control></Control>
+      <UserForm
+        v-model:api_form_data="api_form_data"
+        v-model:form_data="form_data"
+        :application="applicationDetails"
+        :type="type"
+        :first="firsUserInput"
+        @confirm="UserFormConfirm"
+        @cancel="UserFormCancel"
+        ref="userFormRef"
+      ></UserForm>
+    </div>
+    <template v-if="!(isUserInput || isAPIInput) || !firsUserInput || type === 'log'">
+      <el-scrollbar ref="scrollDiv" @scroll="handleScrollTop">
+        <div ref="dialogScrollbar" class="ai-chat__content p-16">
+          <PrologueContent
+            :type="type"
+            :application="applicationDetails"
+            :available="available"
+            :send-message="sendMessage"
+          ></PrologueContent>
+
+          <template v-for="(item, index) in chatList" :key="index">
+            <!-- 问题 -->
+            <QuestionContent
+              :type="type"
+              :application="applicationDetails"
+              :chat-record="item"
+            ></QuestionContent>
+            <!-- 回答 -->
+            <AnswerContent
+              :application="applicationDetails"
+              :loading="loading"
+              v-model:chat-record="chatList[index]"
+              :type="type"
+              :send-message="sendMessage"
+              :chat-management="ChatManagement"
+            ></AnswerContent>
+          </template>
+          <TransitionContent
+            v-if="transcribing"
+            :text="t('chat.transcribing')"
+            :type="type"
+            :application="applicationDetails"
+          ></TransitionContent>
+        </div>
+      </el-scrollbar>
+
+      <ChatInputOperate
+        :app-id="appId"
+        :application-details="applicationDetails"
+        :is-mobile="isMobile"
+        :type="type"
+        :send-message="sendMessage"
+        :open-chat-id="openChatId"
+        :validate="validate"
+        :chat-management="ChatManagement"
+        v-model:chat-id="chartOpenId"
+        v-model:loading="loading"
+        v-model:show-user-input="showUserInput"
+        v-if="type !== 'log'"
+      >
+        <template #operateBefore>
+          <div class="flex-between">
+            <slot name="operateBefore">
+              <span></span>
+            </slot>
+
+            <el-button
+              v-if="isUserInput || isAPIInput"
+              class="user-input-button mb-8"
+              type="primary"
+              text
+              @click="toggleUserInput"
+            >
+              <AppIcon iconName="app-user-input"></AppIcon>
+            </el-button>
+          </div>
+        </template>
+      </ChatInputOperate>
+
+      <Control></Control>
+    </template>
   </div>
 </template>
 <script setup lang="ts">
@@ -65,11 +108,14 @@ import { isWorkFlow } from '@/utils/application'
 import { debounce } from 'lodash'
 import AnswerContent from '@/components/ai-chat/component/answer-content/index.vue'
 import QuestionContent from '@/components/ai-chat/component/question-content/index.vue'
+import TransitionContent from '@/components/ai-chat/component/transition-content/index.vue'
 import ChatInputOperate from '@/components/ai-chat/component/chat-input-operate/index.vue'
 import PrologueContent from '@/components/ai-chat/component/prologue-content/index.vue'
 import UserForm from '@/components/ai-chat/component/user-form/index.vue'
 import Control from '@/components/ai-chat/component/control/index.vue'
 import { t } from '@/locales'
+import bus from '@/bus'
+const transcribing = ref<boolean>(false)
 defineOptions({ name: 'AiChat' })
 const route = useRoute()
 const {
@@ -95,7 +141,7 @@ const props = withDefaults(
 const emit = defineEmits(['refresh', 'scroll'])
 const { application, common } = useStore()
 const isMobile = computed(() => {
-  return common.isMobile() || mode === 'embed'
+  return common.isMobile() || mode === 'embed' || mode === 'mobile'
 })
 const aiChatRef = ref()
 const scrollDiv = ref()
@@ -107,16 +153,47 @@ const chatList = ref<any[]>([])
 const form_data = ref<any>({})
 const api_form_data = ref<any>({})
 const userFormRef = ref<InstanceType<typeof UserForm>>()
+// 用户输入
+const firsUserInput = ref(false)
+const showUserInput = ref(false)
+
+// 初始表单数据（用于恢复）
+const initialFormData = ref({})
+const initialApiFormData = ref({})
+
+const isUserInput = computed(
+  () =>
+    props.applicationDetails.work_flow?.nodes?.filter((v: any) => v.id === 'base-node')[0]
+      .properties.user_input_field_list.length > 0
+)
+const isAPIInput = computed(
+  () =>
+    props.type === 'debug-ai-chat' &&
+    props.applicationDetails.work_flow?.nodes?.filter((v: any) => v.id === 'base-node')[0]
+      .properties.api_input_field_list.length > 0
+)
+const showUserInputContent = computed(() => {
+  return (
+    (((isUserInput.value || isAPIInput.value) && firsUserInput.value) || showUserInput.value) &&
+    props.type !== 'log'
+  )
+})
 watch(
   () => props.chatId,
   (val) => {
     if (val && val !== 'new') {
       chartOpenId.value = val
+      firsUserInput.value = false
     } else {
       chartOpenId.value = ''
+      if (isUserInput.value) {
+        firsUserInput.value = true
+      } else if (props.type == 'debug-ai-chat' && isAPIInput.value) {
+        firsUserInput.value = true
+      }
     }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 watch(
@@ -137,12 +214,73 @@ watch(
   }
 )
 
-function sendMessage(val: string, other_params_data?: any, chat?: chatType) {
-  if (!userFormRef.value?.checkInputParam()) {
-    return
+const toggleUserInput = () => {
+  showUserInput.value = !showUserInput.value
+  if (showUserInput.value) {
+    // 保存当前数据作为初始数据（用于可能的恢复）
+    initialFormData.value = JSON.parse(JSON.stringify(form_data.value))
+    initialApiFormData.value = JSON.parse(JSON.stringify(api_form_data.value))
   }
-  if (!loading.value && props.applicationDetails?.name) {
-    handleDebounceClick(val, other_params_data, chat)
+}
+
+function UserFormConfirm() {
+  firsUserInput.value = false
+  showUserInput.value = false
+}
+function UserFormCancel() {
+  // 恢复初始数据
+  form_data.value = JSON.parse(JSON.stringify(initialFormData.value))
+  api_form_data.value = JSON.parse(JSON.stringify(initialApiFormData.value))
+  userFormRef.value?.render(form_data.value)
+  showUserInput.value = false
+}
+
+const validate = () => {
+  return userFormRef.value?.validate() || Promise.reject(false)
+}
+
+function sendMessage(val: string, other_params_data?: any, chat?: chatType): Promise<boolean> {
+  if (isUserInput.value) {
+    if (userFormRef.value) {
+      return userFormRef.value
+        ?.validate()
+        .then((ok) => {
+          let userFormData = JSON.parse(localStorage.getItem(`${accessToken}userForm`) || '{}')
+          const newData = Object.keys(form_data.value).reduce((result: any, key: string) => {
+            result[key] = Object.prototype.hasOwnProperty.call(userFormData, key)
+              ? userFormData[key]
+              : form_data.value[key]
+            return result
+          }, {})
+          localStorage.setItem(`${accessToken}userForm`, JSON.stringify(newData))
+
+          showUserInput.value = false
+
+          if (!loading.value && props.applicationDetails?.name) {
+            handleDebounceClick(val, other_params_data, chat)
+            return true
+          }
+          throw 'err: no send'
+        })
+        .catch((e) => {
+          if (isAPIInput.value && props.type !== 'debug-ai-chat') {
+            showUserInput.value = false
+          } else {
+            showUserInput.value = true
+          }
+
+          return false
+        })
+    } else {
+      return Promise.reject(false)
+    }
+  } else {
+    showUserInput.value = false
+    if (!loading.value && props.applicationDetails?.name) {
+      handleDebounceClick(val, other_params_data, chat)
+      return Promise.resolve(true)
+    }
+    return Promise.reject(false)
   }
 }
 
@@ -173,7 +311,8 @@ const openChatId: () => Promise<string> = () => {
   } else {
     if (isWorkFlow(obj.type)) {
       const submitObj = {
-        work_flow: obj.work_flow
+        work_flow: obj.work_flow,
+        user_id: obj.user
       }
       return applicationApi.postWorkflowChatOpen(submitObj).then((res) => {
         chartOpenId.value = res.data
@@ -307,7 +446,9 @@ function chatMessage(chat?: any, problem?: string, re_chat?: boolean, other_para
             ? other_params_data.document_list
             : [],
         audio_list:
-          other_params_data && other_params_data.audio_list ? other_params_data.audio_list : []
+          other_params_data && other_params_data.audio_list ? other_params_data.audio_list : [],
+        other_list:
+          other_params_data && other_params_data.other_list ? other_params_data.other_list : []
       }
     })
     chatList.value.push(chat)
@@ -390,14 +531,16 @@ function chatMessage(chat?: any, problem?: string, re_chat?: boolean, other_para
  * @param row
  */
 function getSourceDetail(row: any) {
-  logApi.getRecordDetail(id || props.appId, row.chat_id, row.record_id, loading).then((res) => {
-    const exclude_keys = ['answer_text', 'id', 'answer_text_list']
-    Object.keys(res.data).forEach((key) => {
-      if (!exclude_keys.includes(key)) {
-        row[key] = res.data[key]
-      }
+  if (row.record_id) {
+    logApi.getRecordDetail(id || props.appId, row.chat_id, row.record_id, loading).then((res) => {
+      const exclude_keys = ['answer_text', 'id', 'answer_text_list']
+      Object.keys(res.data).forEach((key) => {
+        if (!exclude_keys.includes(key)) {
+          row[key] = res.data[key]
+        }
+      })
     })
-  })
+  }
   return true
 }
 
@@ -419,7 +562,7 @@ const handleScrollTop = ($event: any) => {
   scrollTop.value = $event.scrollTop
   if (
     dialogScrollbar.value.scrollHeight - (scrollTop.value + scrollDiv.value.wrapRef.offsetHeight) <=
-    30
+    40
   ) {
     scorll.value = true
   } else {
@@ -443,7 +586,23 @@ const handleScroll = () => {
 }
 
 onMounted(() => {
+  if (isUserInput.value && localStorage.getItem(`${accessToken}userForm`)) {
+    let userFormData = JSON.parse(localStorage.getItem(`${accessToken}userForm`) || '{}')
+    form_data.value = userFormData
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel()
+  }
+
   window.sendMessage = sendMessage
+  bus.on('on:transcribing', (status: boolean) => {
+    transcribing.value = status
+    nextTick(() => {
+      if (scorll.value) {
+        scrollDiv.value.setScrollTop(getMaxHeight())
+      }
+    })
+  })
 })
 
 onBeforeUnmount(() => {
@@ -468,6 +627,35 @@ defineExpose({
   sendMessage
 })
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 @import './index.scss';
+.firstUserInput {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  .user-form-container {
+    max-width: 70%;
+  }
+}
+.debug-ai-chat {
+  .user-form-container {
+    max-width: 100%;
+  }
+}
+.popperUserInput {
+  position: absolute;
+  z-index: 999;
+  right: 50px;
+  bottom: 0;
+  width: calc(100% - 50px);
+  max-width: 400px;
+}
+@media only screen and (max-width: 768px) {
+  .firstUserInput {
+    .user-form-container {
+      max-width: 100%;
+    }
+  }
+}
 </style>

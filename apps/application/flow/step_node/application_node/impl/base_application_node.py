@@ -115,6 +115,10 @@ def write_context(node_variable: Dict, workflow_variable: Dict, node: INode, wor
                                          'prompt_tokens': response.get('prompt_tokens')}}
     answer = response.get('content', '') or "抱歉，没有查找到相关内容，请重新描述您的问题或提供更多信息。"
     reasoning_content = response.get('reasoning_content', '')
+    answer_list = response.get('answer_list', [])
+    node_variable['application_node_dict'] = {answer.get('real_node_id'): {**answer, 'index': index} for answer, index
+                                              in
+                                              zip(answer_list, range(len(answer_list)))}
     _write_context(node_variable, workflow_variable, node, workflow, answer, reasoning_content)
 
 
@@ -164,7 +168,8 @@ class BaseApplicationNode(IApplicationNode):
         self.context['question'] = details.get('question')
         self.context['type'] = details.get('type')
         self.context['reasoning_content'] = details.get('reasoning_content')
-        self.answer_text = details.get('answer')
+        if self.node_params.get('is_result', False):
+            self.answer_text = details.get('answer')
 
     def execute(self, application_id, message, chat_id, chat_record_id, stream, re_chat, client_id, client_type,
                 app_document_list=None, app_image_list=None, app_audio_list=None, child_node=None, node_data=None,
@@ -174,7 +179,8 @@ class BaseApplicationNode(IApplicationNode):
         current_chat_id = string_to_uuid(chat_id + application_id)
         Chat.objects.get_or_create(id=current_chat_id, defaults={
             'application_id': application_id,
-            'abstract': message
+            'abstract': message[0:1024],
+            'client_id': client_id,
         })
         if app_document_list is None:
             app_document_list = []

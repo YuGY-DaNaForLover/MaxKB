@@ -83,6 +83,14 @@ const platforms = reactive([
     description: t('views.application.applicationAccess.larkTip'),
     isActive: false,
     exists: false
+  },
+  {
+    key: 'slack',
+    logoSrc: new URL(`../../assets/logo_slack.svg`, import.meta.url).href,
+    name: t('views.application.applicationAccess.slack'),
+    description: t('views.application.applicationAccess.slackTip'),
+    isActive: false,
+    exists: false
   }
 ])
 
@@ -127,51 +135,4 @@ onMounted(() => {
 })
 </script>
 
-<style lang="scss" scoped>
-.p-16-24 {
-  padding: 16px 24px;
-}
-
-.mb-16 {
-  margin-bottom: 16px;
-}
-
-.flex-between {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.flex {
-  display: flex;
-}
-
-.align-center {
-  align-items: center;
-}
-
-.ml-8 {
-  margin-left: 8px;
-}
-
-.mr-8 {
-  margin-right: 8px;
-}
-
-.ml-12 {
-  margin-left: 12px;
-}
-
-.mr-4 {
-  margin-right: 4px;
-}
-
-.cursor {
-  cursor: pointer;
-}
-
-.icon {
-  width: 32px; // 设置图标宽度
-  height: 32px; // 设置图标高度
-}
-</style>
+<style lang="scss" scoped></style>

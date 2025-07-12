@@ -6,6 +6,7 @@
     @date：2024/7/12 10:19
     @desc:
 """
+import traceback
 from typing import Dict
 
 from django.utils.translation import gettext_lazy as _, gettext
@@ -26,7 +27,7 @@ class WenxinLLMModelParams(BaseForm):
                                     _step=0.01,
                                     precision=2)
 
-    max_tokens = forms.SliderField(
+    max_output_tokens = forms.SliderField(
         TooltipLabel(_('Output the maximum Tokens'),
                      _('Specify the maximum number of tokens that the model can generate')),
         required=True, default_value=1024,
@@ -58,6 +59,7 @@ class WenxinLLMModelCredential(BaseForm, BaseModelCredential):
             model.invoke(
                 [HumanMessage(content=gettext('Hello'))])
         except Exception as e:
+            traceback.print_exc()
             raise e
         return True
 

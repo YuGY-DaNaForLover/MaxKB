@@ -357,6 +357,13 @@ const getFunctionLib: (
   return get(`${prefix}/${application_id}/function_lib/${function_lib_id}`, undefined, loading)
 }
 
+const getMcpTools: (
+  data: any,
+  loading?: Ref<boolean>
+) => Promise<Result<any>> = (data, loading) => {
+  return get(`${prefix}/mcp_servers`, data, loading)
+}
+
 const getApplicationById: (
   application_id: String,
   app_id: String,
@@ -628,5 +635,6 @@ export default {
   saveAsTemplate,
   getApplicationIdList,
   deleteApplicationQaText,
-  createApplicationQaText
+  createApplicationQaText,
+  getMcpTools
 }
