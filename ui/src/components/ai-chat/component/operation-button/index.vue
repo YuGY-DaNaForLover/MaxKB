@@ -38,7 +38,7 @@
         :applicationId="application.id"
         :chatId="chatRecord.chat_id"
         :chat_loading="loading"
-        :is_checkbox="application.ext.is_checkbox"
+        :is_checkbox="application.ext?.is_checkbox || false"
         @regeneration="regenerationChart(chatRecord)"
       />
     </div>

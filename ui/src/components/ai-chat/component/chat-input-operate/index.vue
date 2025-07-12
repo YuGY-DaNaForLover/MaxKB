@@ -262,26 +262,24 @@ const documentExtensions = ['pdf', 'docx', 'txt', 'xls', 'xlsx', 'md', 'html', '
 const videoExtensions = ['mp4', 'avi', 'mov', 'mkv', 'flv']
 const audioExtensions = ['mp3', 'wav', 'ogg', 'aac', 'm4a']
 
-const getAcceptList = () => {
+const getAcceptList = (): string => {
   const { image, document, audio, video } = props.applicationDetails.file_upload_setting
-  let accepts: any = []
-  if (image) {
-    accepts = [...imageExtensions]
-  }
-  if (document) {
-    accepts = [...accepts, ...documentExtensions]
-  }
-  if (audio) {
-    accepts = [...accepts, ...audioExtensions]
-  }
-  if (video) {
-    accepts = [...accepts, ...videoExtensions]
+  const accepts: string[] = []
+  
+  const addExtensions = (enabled: boolean, extensions: string[]) => {
+    if (enabled) {
+      accepts.push(...extensions)
+    }
   }
 
-  if (accepts.length === 0) {
-    return `.${t('chat.uploadFile.tipMessage')}`
-  }
-  return accepts.map((ext: any) => '.' + ext).join(',')
+  addExtensions(image, imageExtensions)
+  addExtensions(document, documentExtensions)
+  addExtensions(audio, audioExtensions)
+  addExtensions(video, videoExtensions)
+
+  return accepts.length === 0 
+    ? `.${t('chat.uploadFile.tipMessage')}`
+    : accepts.map(ext => `.${ext}`).join(',')
 }
 
 const checkMaxFilesLimit = () => {

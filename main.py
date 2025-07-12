@@ -73,7 +73,7 @@ def dev():
     services = args.services if isinstance(
         args.services, list) else args.services
     if services.__contains__('web'):
-        management.call_command('runserver', "0.0.0.0:8080")
+        management.call_command('runserver', "0.0.0.0:18080")
     elif services.__contains__('celery'):
         management.call_command('celery', 'celery')
     elif services.__contains__('local_model'):
