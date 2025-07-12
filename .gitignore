@@ -184,3 +184,6 @@ data
 .dev
 poetry.lock
 apps/setting/models_provider/impl/*/icon/
+
+# Claude Code configuration
+.claude/
