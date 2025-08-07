@@ -6,7 +6,7 @@ import { type Ref } from 'vue'
 import type { FormField } from '@/components/dynamics-form/type'
 
 const prefix = '/application'
-const extPrefix = '/ext'
+const extPrefix = ''
 
 /**
  * 获取全部应用

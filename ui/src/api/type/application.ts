@@ -24,7 +24,7 @@ interface ApplicationFormType {
   tts_type?: string
   tts_autoplay?: boolean
   stt_autosend?: boolean
-  ext: {
+  ext?: {
     title: string
     subject_identifier: string
     q_a_component: string

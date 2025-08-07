@@ -27,7 +27,7 @@ from smartdoc.const import CONFIG
 
 class Ext(serializers.Serializer):
     title = serializers.CharField(
-        required=True, error_messages=ErrMessage.float(_("Reference segment number")))
+        required=False, error_messages=ErrMessage.float(_("Reference segment number")))
     subject_identifier = serializers.CharField(
         required=False, allow_null=True, allow_blank=True)
     q_a_component = serializers.CharField(
